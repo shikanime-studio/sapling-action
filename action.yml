@@ -38,6 +38,12 @@ inputs:
 runs:
   using: composite
   steps:
+    - id: createGithubAppToken
+      uses: actions/create-github-app-token@v1
+      with:
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.private-key }}
+
     - uses: github/command@v1
       id: commandLand
       with:
@@ -63,16 +69,6 @@ runs:
         permissions: ${{ inputs.permissions }}
         github_token: ${{ steps.createGithubAppToken.outputs.token }}
         skip_ci: "true"
-
-    - id: createGithubAppToken
-      uses: actions/create-github-app-token@v1
-      with:
-        app-id: ${{ inputs.app-id }}
-        private-key: ${{ inputs.private-key }}
-      if: |
-        steps.commandLand.outputs.continue == 'true' ||
-        steps.commandRebase.outputs.continue == 'true' ||
-        steps.commandClose.outputs.continue == 'true'
 
     - uses: actions/checkout@v4
       with:
