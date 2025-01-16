@@ -38,38 +38,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - id: createGithubAppToken
-      uses: actions/create-github-app-token@v1
-      with:
-        app-id: ${{ inputs.app-id }}
-        private-key: ${{ inputs.private-key }}
-
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        token: ${{ steps.createGithubAppToken.outputs.token }}
-
-    - uses: DeterminateSystems/nix-installer-action@v13
-    - uses: DeterminateSystems/magic-nix-cache-action@v8
-
-    - shell: bash
-      run: |
-        nix run nixpkgs#sapling -- config \
-          --local ui.username "${{ inputs.username }}" \
-          --local ui.email "${{ inputs.email }}"
-    - id: importGPG
-      uses: crazy-max/ghaction-import-gpg@v6
-      with:
-        gpg_private_key: ${{ inputs.gpg-private-key }}
-        passphrase: ${{ inputs.gpg-passphrase }}
-      if: ${{ inputs.sign-commits == 'true' }}
-    - shell: bash
-      run: |
-        nix run nixpkgs#sapling -- config \
-          --local gpg.key "${{ steps.importGPG.outputs.keyid }}" \
-          --local commit.gpgsign true
-      if: ${{ inputs.sign-commits == 'true' }}
-
     - uses: github/command@v1
       id: commandLand
       with:
@@ -78,15 +46,6 @@ runs:
         allowed_contexts: pull_request
         permissions: ${{ inputs.permissions }}
         github_token: ${{ steps.createGithubAppToken.outputs.token }}
-    - name: Land Pull Request
-      shell: bash
-      run: |
-        nix run nixpkgs#sapling -- ghstack land \
-          ${{ github.event.issue.pull_request.html_url }}
-      if: ${{ steps.commandLand.outputs.continue == 'true' }}
-      env:
-        GH_TOKEN: ${{ steps.createGithubAppToken.outputs.token }}
-
     - uses: github/command@v1
       id: commandRebase
       with:
@@ -95,18 +54,6 @@ runs:
         allowed_contexts: pull_request
         permissions: ${{ inputs.permissions }}
         github_token: ${{ steps.createGithubAppToken.outputs.token }}
-    - name: Land Pull Request
-      shell: bash
-      run: |
-        nix run nixpkgs#sapling -- ghstack checkout \
-          ${{ github.event.issue.pull_request.html_url }}
-        nix run nixpkgs#sapling -- rebase \
-          --dest ${{ inputs.base }}
-        nix run nixpkgs#sapling -- ghstack submit
-      if: ${{ steps.commandRebase.outputs.continue == 'true' }}
-      env:
-        GH_TOKEN: ${{ steps.createGithubAppToken.outputs.token }}
-
     - uses: github/command@v1
       id: commandClose
       with:
@@ -116,12 +63,96 @@ runs:
         permissions: ${{ inputs.permissions }}
         github_token: ${{ steps.createGithubAppToken.outputs.token }}
         skip_ci: "true"
+
+    - id: createGithubAppToken
+      uses: actions/create-github-app-token@v1
+      with:
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.private-key }}
+      if: |
+        steps.commandLand.outputs.continue == 'true' ||
+        steps.commandRebase.outputs.continue == 'true' ||
+        steps.commandClose.outputs.continue == 'true'
+
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ steps.createGithubAppToken.outputs.token }}
+      if: |
+        steps.commandLand.outputs.continue == 'true' ||
+        steps.commandRebase.outputs.continue == 'true' ||
+        steps.commandClose.outputs.continue == 'true'
+
+    - uses: DeterminateSystems/nix-installer-action@v13
+      if: |
+        steps.commandLand.outputs.continue == 'true' ||
+        steps.commandRebase.outputs.continue == 'true' ||
+        steps.commandClose.outputs.continue == 'true'
+    - uses: DeterminateSystems/magic-nix-cache-action@v8
+      if: |
+        steps.commandLand.outputs.continue == 'true' ||
+        steps.commandRebase.outputs.continue == 'true' ||
+        steps.commandClose.outputs.continue == 'true'
+
+    - shell: bash
+      run: |
+        nix run nixpkgs#sapling -- config \
+          --local ui.username "${{ inputs.username }}" \
+          --local ui.email "${{ inputs.email }}"
+      if: |
+        steps.commandLand.outputs.continue == 'true' ||
+        steps.commandRebase.outputs.continue == 'true' ||
+        steps.commandClose.outputs.continue == 'true'
+    - id: importGPG
+      uses: crazy-max/ghaction-import-gpg@v6
+      with:
+        gpg_private_key: ${{ inputs.gpg-private-key }}
+        passphrase: ${{ inputs.gpg-passphrase }}
+      if: |
+        inputs.sign-commits == 'true' && (
+          steps.commandLand.outputs.continue == 'true' ||
+          steps.commandRebase.outputs.continue == 'true' ||
+          steps.commandClose.outputs.continue == 'true'
+        )
+    - shell: bash
+      run: |
+        nix run nixpkgs#sapling -- config \
+          --local gpg.key "${{ steps.importGPG.outputs.keyid }}" \
+          --local commit.gpgsign true
+      if: |
+        inputs.sign-commits == 'true' && (
+          steps.commandLand.outputs.continue == 'true' ||
+          steps.commandRebase.outputs.continue == 'true' ||
+          steps.commandClose.outputs.continue == 'true'
+        )
+
+    - name: Land Pull Request
+      shell: bash
+      run: |
+        nix run nixpkgs#sapling -- ghstack land \
+          ${{ github.event.issue.pull_request.html_url }}
+      if: steps.commandLand.outputs.continue == 'true'
+      env:
+        GH_TOKEN: ${{ steps.createGithubAppToken.outputs.token }}
+
+    - name: Land Pull Request
+      shell: bash
+      run: |
+        nix run nixpkgs#sapling -- ghstack checkout \
+          ${{ github.event.issue.pull_request.html_url }}
+        nix run nixpkgs#sapling -- rebase \
+          --dest ${{ inputs.base }}
+        nix run nixpkgs#sapling -- ghstack submit
+      if: steps.commandRebase.outputs.continue == 'true'
+      env:
+        GH_TOKEN: ${{ steps.createGithubAppToken.outputs.token }}
+
     - name: Land Pull Request
       shell: bash
       run: |
         nix run nixpkgs#sapling -- ghstack action \
           --close \
           ${{ github.event.issue.pull_request.html_url }}
-      if: ${{ steps.commandClose.outputs.continue == 'true' }}
+      if: steps.commandClose.outputs.continue == 'true'
       env:
         GH_TOKEN: ${{ steps.createGithubAppToken.outputs.token }}
