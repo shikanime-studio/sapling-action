@@ -131,7 +131,7 @@ runs:
       env:
         GH_TOKEN: ${{ steps.createGithubAppToken.outputs.token }}
 
-    - name: Land Pull Request
+    - name: Rebase Pull Request
       shell: bash
       run: |
         nix run nixpkgs#sapling -- ghstack checkout \
@@ -143,7 +143,7 @@ runs:
       env:
         GH_TOKEN: ${{ steps.createGithubAppToken.outputs.token }}
 
-    - name: Land Pull Request
+    - name: Close Pull Request
       shell: bash
       run: |
         nix run nixpkgs#sapling -- ghstack action \
