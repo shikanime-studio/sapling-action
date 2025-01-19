@@ -129,7 +129,8 @@ runs:
           nix run nixpkgs#sapling -- ghstack land \
             ${{ github.event.issue.pull_request.html_url }}
         elif [ "${{ steps.commandLand.outputs.params }}" == "pr" ]; then
-          nix run nixpkgs#sapling -- goto ${{ github.event.issue.pull_request.head.sha }}
+          nix run nixpkgs#sapling -- pr pull |
+            ${{ github.event.issue.pull_request.html_url }}
           nix run nixpkgs#sapling -- push --to ${{ inputs.base }}
         fi
       if: steps.commandLand.outputs.continue == 'true'
