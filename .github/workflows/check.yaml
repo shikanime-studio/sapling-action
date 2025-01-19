@@ -12,15 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
       - uses: DeterminateSystems/nix-installer-action@v13
         with:
           github-token: ${{ secrets.NIX_GITHUB_TOKEN }}
-          extra-conf: |
-            system-features = nixos-test benchmark big-parallel kvm
-            extra-platforms = aarch64-linux arm-linux
       - uses: DeterminateSystems/magic-nix-cache-action@v8
       - uses: cachix/cachix-action@v12
         with:
