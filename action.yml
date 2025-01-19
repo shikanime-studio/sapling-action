@@ -128,7 +128,7 @@ runs:
         if [ "${{ steps.commandLand.outputs.params }}" == "ghstack" ]; then
           nix run nixpkgs#sapling -- ghstack land \
             ${{ github.event.issue.pull_request.html_url }}
-        else
+        elif [ "${{ steps.commandLand.outputs.params }}" == "pr" ]; then
           nix run nixpkgs#sapling -- go ${{ github.event.pull_request.head.sha }}
           nix run nixpkgs#sapling -- push --to ${{ inputs.base }}
         fi
