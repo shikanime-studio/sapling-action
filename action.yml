@@ -141,11 +141,20 @@ runs:
     - name: Rebase Pull Request
       shell: bash
       run: |
-        nix run nixpkgs#sapling -- ghstack checkout \
-          ${{ github.event.issue.pull_request.html_url }}
-        nix run nixpkgs#sapling -- rebase \
-          --dest ${{ inputs.base }}
-        nix run nixpkgs#sapling -- ghstack submit
+        if [ "${{ steps.commandRebase.outputs.params }}" == "ghstack" ]; then
+          nix run nixpkgs#sapling -- ghstack checkout \
+            ${{ github.event.issue.pull_request.html_url }}
+          nix run nixpkgs#sapling -- rebase \
+            --dest ${{ inputs.base }}
+          nix run nixpkgs#sapling -- ghstack submit
+        elif [ "${{ steps.commandRebase.outputs.params }}" == "pr" ]; then
+          nix run nixpkgs#sapling -- pr checkout \
+            --goto \
+            ${{ github.event.issue.pull_request.html_url }}
+          nix run nixpkgs#sapling -- rebase \
+            --dest ${{ inputs.base }}
+          nix run nixpkgs#sapling -- pr submit
+        fi
       if: steps.commandRebase.outputs.continue == 'true'
       env:
         GH_TOKEN: ${{ steps.createGithubAppToken.outputs.token }}
