@@ -125,7 +125,8 @@ runs:
     - name: Land Pull Request
       shell: bash
       run: |
-        if [ "${{ steps.commandLand.outputs.params }}" == "ghstack" ]; then
+        if [ "${{ steps.commandLand.outputs.params }}" == "ghstack" ] || \
+           [ -z "${{ steps.commandLand.outputs.params }}" ]; then
           nix run nixpkgs#sapling -- ghstack land \
             ${{ github.event.issue.pull_request.html_url }}
         elif [ "${{ steps.commandLand.outputs.params }}" == "pr" ]; then
@@ -141,7 +142,8 @@ runs:
     - name: Rebase Pull Request
       shell: bash
       run: |
-        if [ "${{ steps.commandRebase.outputs.params }}" == "ghstack" ]; then
+        if [ "${{ steps.commandRebase.outputs.params }}" == "ghstack" ] || \
+           [ -z "${{ steps.commandRebase.outputs.params }}" ]; then
           nix run nixpkgs#sapling -- ghstack checkout \
             ${{ github.event.issue.pull_request.html_url }}
           nix run nixpkgs#sapling -- rebase \
@@ -162,7 +164,8 @@ runs:
     - name: Close Pull Request
       shell: bash
       run: |
-        if [ "${{ steps.commandClose.outputs.params }}" == "ghstack" ]; then
+        if [ "${{ steps.commandClose.outputs.params }}" == "ghstack" ] || \
+           [ -z "${{ steps.commandClose.outputs.params }}" ]; then
           nix run nixpkgs#sapling -- ghstack action \
             --close \
             ${{ github.event.issue.pull_request.html_url }}
