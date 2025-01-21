@@ -37,6 +37,31 @@ jobs:
 This configuration will enable the ghstack action to run whenever a comment is
 added to a pull request.
 
+## Usage
+
+To use the ghstack action, add the following command to a comment in a pull
+request for a ghstack pull request:
+
+```
+.land | ghstack
+```
+
+and a classic pull request:
+
+```
+.land | pr
+```
+
+This command will check the status of the pull request and, if it is ready to be
+landed, it will automatically land the pull request using ghstack.
+
+To rebase and update your pull requests with the latest changes from the main
+branch, use the following command:
+
+```
+.rebase
+```
+
 ## Repository Rules Configuration
 
 To ensure secure and efficient development workflow, we recommend configuring
