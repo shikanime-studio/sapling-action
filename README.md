@@ -133,7 +133,6 @@ resource "github_repository_ruleset" "landing" {
 
   rules {
     pull_request {
-      require_code_owner_review         = true
       required_review_thread_resolution = true
     }
     required_status_checks {
