@@ -153,9 +153,15 @@ runs:
     - name: Close Pull Request
       shell: bash
       run: |
-        nix run nixpkgs#sapling -- ghstack action \
-          --close \
-          ${{ github.event.issue.pull_request.html_url }}
+        if [ "${{ steps.commandClose.outputs.params }}" == "ghstack" ]; then
+          nix run nixpkgs#sapling -- ghstack action \
+            --close \
+            ${{ github.event.issue.pull_request.html_url }}
+        elif [ "${{ steps.commandClose.outputs.params }}" == "pr" ]; then
+          nix run nixpkgs#gh -- pr close \
+            --delete-branch \
+            ${{ github.event.issue.pull_request.html_url }}
+        fi
       if: steps.commandClose.outputs.continue == 'true'
       env:
         GH_TOKEN: ${{ steps.createGithubAppToken.outputs.token }}
