@@ -37,7 +37,6 @@ jobs:
 This configuration will enable the ghstack action to run whenever a comment is
 added to a pull request.
 
-
 ## Usage
 
 To use the ghstack action, add the following command to a comment in a pull
