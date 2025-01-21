@@ -92,6 +92,7 @@ resource "github_repository_ruleset" "main" {
 
   rules {
     required_linear_history = true
+    required_signatures     = true
   }
 }
 ```
@@ -136,7 +137,8 @@ resource "github_repository_ruleset" "landing" {
     }
     required_status_checks {
       required_check {
-        context = "check"
+        context        = "check"
+        integration_id = 15368 # GitHub Actions
       }
       strict_required_status_checks_policy = true
     }
