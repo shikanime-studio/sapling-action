@@ -137,7 +137,7 @@ runs:
           nix run nixpkgs#sapling -- push \
             --delete $(
               gh pr view
-              https://github.com/shikanime/shikanime/pull/266 \
+                https://github.com/shikanime/shikanime/pull/266 \
                 --json baseRefName \
                 -q .baseRefName
             )
