@@ -132,7 +132,8 @@ runs:
           nix run nixpkgs#sapling -- pr pull \
             --goto \
             ${{ github.event.issue.pull_request.html_url }}
-          nix run nixpkgs#sapling -- push
+          nix run nixpkgs#sapling -- push \
+            --to ${{ inputs.base }}
           nix run nixpkgs#sapling -- push \
             --delete $(
               gh pr view
