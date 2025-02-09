@@ -139,8 +139,8 @@ runs:
             --delete $(
               gh pr view \
                 ${{ github.event.issue.pull_request.html_url }} \
-                --json baseRefName \
-                -q .baseRefName
+                --json headRefName \
+                -q .headRefName
             )
         fi
       if: steps.commandLand.outputs.continue == 'true'
