@@ -24,14 +24,55 @@ name: ghstack
 on:
   issue_comment:
     types: [created]
+permissions:
+  contents: write
+  pull-requests: write
 jobs:
   ghstack:
     runs-on: ubuntu-latest
     steps:
-      - uses: shikanime/ghstack-actions@main
+      - uses: actions/checkout@v4
         with:
-          app-id: ${{ secrets.APP_ID }}
+          fetch-depth: 0
+      - uses: DeterminateSystems/nix-installer-action@v13
+      - uses: DeterminateSystems/magic-nix-cache-action@v8
+      - uses: shikanime/ghstack-action@main
+        with:
+          sign-commits: true
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+```
+
+or using a GitHub Application:
+
+```yaml
+name: ghstack
+on:
+  issue_comment:
+    types: [created]
+jobs:
+  ghstack:
+    runs-on: ubuntu-latest
+    steps:
+      - id: createGithubAppToken
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.createGithubAppToken.outputs.token }}
+      - uses: DeterminateSystems/nix-installer-action@v13
+        with:
+          github-token: ${{ steps.createGithubAppToken.outputs.token }}
+      - uses: DeterminateSystems/magic-nix-cache-action@v8
+      - uses: shikanime/ghstack-action@main
+        with:
+          token: ${{ steps.createGithubAppToken.outputs.token }}
+          sign-commits: true
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
 ```
 
 This configuration will enable the ghstack action to run whenever a comment is
