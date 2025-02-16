@@ -28,10 +28,25 @@ jobs:
   ghstack:
     runs-on: ubuntu-latest
     steps:
-      - uses: shikanime/ghstack-actions@main
+      - id: createGithubAppToken
+        uses: actions/create-github-app-token@v1
         with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.PRIVATE_KEY }}
+          app-id: ${{ vars.OPERATOR_APP_ID }}
+          private-key: ${{ secrets.OPERATOR_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.createGithubAppToken.outputs.token }}
+      - uses: DeterminateSystems/nix-installer-action@v13
+        with:
+          github-token: ${{ steps.createGithubAppToken.outputs.token }}
+      - uses: DeterminateSystems/magic-nix-cache-action@v8
+      - uses: shikanime/ghstack-action@main
+        with:
+          token: ${{ steps.createGithubAppToken.outputs.token }}
+          sign-commits: true
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
 ```
 
 This configuration will enable the ghstack action to run whenever a comment is
