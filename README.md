@@ -24,6 +24,32 @@ name: ghstack
 on:
   issue_comment:
     types: [created]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  ghstack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: DeterminateSystems/nix-installer-action@v13
+      - uses: DeterminateSystems/magic-nix-cache-action@v8
+      - uses: shikanime/ghstack-action@main
+        with:
+          sign-commits: true
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+```
+
+or using a GitHub Application:
+
+```yaml
+name: ghstack
+on:
+  issue_comment:
+    types: [created]
 jobs:
   ghstack:
     runs-on: ubuntu-latest
@@ -31,8 +57,8 @@ jobs:
       - id: createGithubAppToken
         uses: actions/create-github-app-token@v1
         with:
-          app-id: ${{ vars.OPERATOR_APP_ID }}
-          private-key: ${{ secrets.OPERATOR_PRIVATE_KEY }}
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
