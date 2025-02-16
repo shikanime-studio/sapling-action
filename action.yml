@@ -5,11 +5,8 @@ branding:
   color: gray-dark
 description: Land a pull request
 inputs:
-  app-id:
-    description: The GitHub App ID
-    required: true
-  private-key:
-    description: The GitHub App private key
+  token:
+    description: The GitHub Token
     required: true
   base:
     description: The base branch to rebase onto
@@ -38,12 +35,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - id: createGithubAppToken
-      uses: actions/create-github-app-token@v1
-      with:
-        app-id: ${{ inputs.app-id }}
-        private-key: ${{ inputs.private-key }}
-
     - uses: github/command@v1
       id: commandLand
       with:
@@ -51,7 +42,7 @@ runs:
         reaction: ${{ inputs.reaction }}
         allowed_contexts: pull_request
         permissions: ${{ inputs.permissions }}
-        github_token: ${{ steps.createGithubAppToken.outputs.token }}
+        github_token: ${{ inputs.token }}
     - uses: github/command@v1
       id: commandRebase
       with:
@@ -59,7 +50,7 @@ runs:
         reaction: ${{ inputs.reaction }}
         allowed_contexts: pull_request
         permissions: ${{ inputs.permissions }}
-        github_token: ${{ steps.createGithubAppToken.outputs.token }}
+        github_token: ${{ inputs.token }}
     - uses: github/command@v1
       id: commandClose
       with:
@@ -67,17 +58,8 @@ runs:
         reaction: ${{ inputs.reaction }}
         allowed_contexts: pull_request
         permissions: ${{ inputs.permissions }}
-        github_token: ${{ steps.createGithubAppToken.outputs.token }}
+        github_token: ${{ inputs.token }}
         skip_ci: "true"
-
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        token: ${{ steps.createGithubAppToken.outputs.token }}
-      if: |
-        steps.commandLand.outputs.continue == 'true' ||
-        steps.commandRebase.outputs.continue == 'true' ||
-        steps.commandClose.outputs.continue == 'true'
 
     - uses: DeterminateSystems/nix-installer-action@v13
       if: |
@@ -145,7 +127,7 @@ runs:
         fi
       if: steps.commandLand.outputs.continue == 'true'
       env:
-        GH_TOKEN: ${{ steps.createGithubAppToken.outputs.token }}
+        GH_TOKEN: ${{ inputs.token }}
 
     - name: Rebase Pull Request
       shell: bash
@@ -167,7 +149,7 @@ runs:
         fi
       if: steps.commandRebase.outputs.continue == 'true'
       env:
-        GH_TOKEN: ${{ steps.createGithubAppToken.outputs.token }}
+        GH_TOKEN: ${{ inputs.token }}
 
     - name: Close Pull Request
       shell: bash
@@ -184,4 +166,4 @@ runs:
         fi
       if: steps.commandClose.outputs.continue == 'true'
       env:
-        GH_TOKEN: ${{ steps.createGithubAppToken.outputs.token }}
+        GH_TOKEN: ${{ inputs.token }}
