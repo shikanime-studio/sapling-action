@@ -115,16 +115,20 @@ runs:
             # Push current commit
             nix run nixpkgs#sapling -- push --to ${{ inputs.base }}
             # Delete the branch after all commits are pushed
-            nix run nixpkgs#sapling -- push \
-              --delete $(
-                gh pr view \
-                    $(
-                      nix run nixpkgs#sapling -- log -r . \
-                        --template '{github_pull_request_url}'
-                    ) \
-                    --json headRefName \
-                    -q .headRefName
-              )
+            # Get the PR URL from the current commit
+            pr_url=$(
+              nix run nixpkgs#sapling -- log \
+                -r . \
+                --template '{github_pull_request_url}'
+            )
+            # Get the head branch name from the PR
+            branch_name=$(
+              gh pr view "$pr_url" \
+                --json headRefName \
+                -q .headRefName
+            )
+            # Delete the branch
+            nix run nixpkgs#sapling -- push --delete "$branch_name"
             # Check if we've reached our target commit
             if [ "$(nix run nixpkgs#sapling -- log -r . --template '{node}')" = "$head_ref_name" ]; then
               break
