@@ -106,15 +106,28 @@ runs:
             ${{ github.event.issue.pull_request.html_url }}
           nix run nixpkgs#sapling -- rebase \
             --dest ${{ inputs.base }}
-          nix run nixpkgs#sapling -- push \
-            --to ${{ inputs.base }}
-          nix run nixpkgs#sapling -- push \
-            --delete $(
-              gh pr view \
-                ${{ github.event.issue.pull_request.html_url }} \
-                --json headRefName \
-                -q .headRefName
-            )
+          # Store current commit hash to know when to stop
+          head_ref_name=$(nix run nixpkgs#sapling -- log -r . --template '{node}')
+          # Go to the first commit
+          nix run nixpkgs#sapling go bottom
+          # Iterate over at most 100 commits
+          for iteration in {1..100}; do
+            # Push current commit
+            nix run nixpkgs#sapling -- push --to ${{ inputs.base }}
+            # Delete the branch after all commits are pushed
+            nix run nixpkgs#sapling -- push \
+              --delete $(
+                gh pr view \
+                  ${{ github.event.issue.pull_request.html_url }} \
+                  --json headRefName \
+                  -q .headRefName
+              )
+            # Check if we've reached our target commit
+            if [ "$(nix run nixpkgs#sapling -- log -r . --template '{node}')" = "$head_ref_name" ]; then
+              break
+            fi
+            # Move to next commit
+            nix run nixpkgs#sapling next
         fi
       if: steps.commandLand.outputs.continue == 'true'
       env:
