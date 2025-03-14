@@ -107,7 +107,11 @@ runs:
           nix run nixpkgs#sapling -- rebase \
             --dest ${{ inputs.base }}
           # Store current commit hash to know when to stop
-          head_ref_name=$(nix run nixpkgs#sapling -- log -r . --template '{node}')
+          head_ref_name=$(
+            nix run nixpkgs#sapling -- log \
+              -r . \
+              --template '{node}'
+          )
           # Go to the first commit
           nix run nixpkgs#sapling go bottom
           # Iterate over at most 100 commits
