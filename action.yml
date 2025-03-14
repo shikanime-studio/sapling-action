@@ -118,9 +118,12 @@ runs:
             nix run nixpkgs#sapling -- push \
               --delete $(
                 gh pr view \
-                  ${{ github.event.issue.pull_request.html_url }} \
-                  --json headRefName \
-                  -q .headRefName
+                    $(
+                      nix run nixpkgs#sapling -- log -r . \
+                        --template '{github_pull_request_url}'
+                    ) \
+                    --json headRefName \
+                    -q .headRefName
               )
             # Check if we've reached our target commit
             if [ "$(nix run nixpkgs#sapling -- log -r . --template '{node}')" = "$head_ref_name" ]; then
@@ -128,6 +131,7 @@ runs:
             fi
             # Move to next commit
             nix run nixpkgs#sapling next
+          done
         fi
       if: steps.commandLand.outputs.continue == 'true'
       env:
