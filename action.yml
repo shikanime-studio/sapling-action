@@ -118,7 +118,6 @@ runs:
           for iteration in {1..100}; do
             # Push current commit
             nix run nixpkgs#sapling -- push --to ${{ inputs.base }}
-            # Delete the branch after all commits are pushed
             # Get the PR URL from the current commit
             pr_url=$(
               nix run nixpkgs#sapling -- log \
