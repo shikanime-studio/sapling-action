@@ -1,9 +1,9 @@
-# ghstack GitHub Action
+# Sapling GitHub Action
 
 This GitHub Action is a tool that enables you to land pull requests using
-ghstack directly from GitHub Pull Requests web interface. It adds a command that
+Sapling directly from GitHub Pull Requests web interface. It adds a command that
 can be used in pull request comments to check the status and automatically land
-the PR using ghstack.
+the PR using Sapling.
 
 ## Required Permissions
 
@@ -17,10 +17,10 @@ These permissions must be set in the GitHub App settings interface.
 
 ## Workflow Configuration
 
-Add the following to your `.github/workflows/ghstack.yml`:
+Add the following to your `.github/workflows/ci.yml`:
 
 ```yaml
-name: ghstack
+name: sapling
 on:
   issue_comment:
     types: [created]
@@ -28,7 +28,7 @@ permissions:
   contents: write
   pull-requests: write
 jobs:
-  ghstack:
+  sapling:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +36,7 @@ jobs:
           fetch-depth: 0
       - uses: DeterminateSystems/nix-installer-action@v13
       - uses: DeterminateSystems/magic-nix-cache-action@v8
-      - uses: shikanime/ghstack-action@main
+      - uses: shikanime-studio/sapling-action@v2
         with:
           sign-commits: true
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}}
@@ -46,12 +46,12 @@ jobs:
 or using a GitHub Application:
 
 ```yaml
-name: ghstack
+name: sapling
 on:
   issue_comment:
     types: [created]
 jobs:
-  ghstack:
+  sapling:
     runs-on: ubuntu-latest
     steps:
       - id: createGithubAppToken
@@ -67,7 +67,7 @@ jobs:
         with:
           github-token: ${{ steps.createGithubAppToken.outputs.token }}
       - uses: DeterminateSystems/magic-nix-cache-action@v8
-      - uses: shikanime/ghstack-action@main
+      - uses: shikanime-studio/sapling-action@v2
         with:
           token: ${{ steps.createGithubAppToken.outputs.token }}
           sign-commits: true
@@ -75,12 +75,12 @@ jobs:
           gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
 ```
 
-This configuration will enable the ghstack action to run whenever a comment is
+This configuration will enable the Sapling action to run whenever a comment is
 added to a pull request.
 
 ## Usage
 
-To use the ghstack action, add the following command to a comment in a pull
+To use the Sapling action, add the following command to a comment in a pull
 request for a ghstack pull request:
 
 ```

@@ -1,5 +1,5 @@
-name: ghstack
-author: Shikanime Deva
+name: sapling-action
+author: Shikanime Studio
 branding:
   icon: globe
   color: gray-dark
@@ -62,37 +62,17 @@ runs:
         github_token: ${{ inputs.token }}
         skip_ci: "true"
 
-    - shell: bash
-      run: |
-        nix run nixpkgs#sapling -- config \
-          --local ui.username "${{ inputs.username }}" \
-          --local ui.email "${{ inputs.email }}"
+    - uses: shikanime-studio/setup-sapling-action
+      with:
+        username: ${{ inputs.username }}
+        email: ${{ inputs.email }}
+        sign-commits: ${{ inputs.sign-commits }}
+        gpg-private-key: ${{ inputs.gpg-private-key }}
+        gpg-passphrase: ${{ inputs.gpg-passphrase }}
       if: |
         steps.commandLand.outputs.continue == 'true' ||
         steps.commandRebase.outputs.continue == 'true' ||
         steps.commandClose.outputs.continue == 'true'
-    - id: importGPG
-      uses: crazy-max/ghaction-import-gpg@v6
-      with:
-        gpg_private_key: ${{ inputs.gpg-private-key }}
-        passphrase: ${{ inputs.gpg-passphrase }}
-      if: |
-        inputs.sign-commits == 'true' && (
-          steps.commandLand.outputs.continue == 'true' ||
-          steps.commandRebase.outputs.continue == 'true' ||
-          steps.commandClose.outputs.continue == 'true'
-        )
-    - shell: bash
-      run: |
-        nix run nixpkgs#sapling -- config \
-          --local gpg.key "${{ steps.importGPG.outputs.keyid }}" \
-          --local commit.gpgsign true
-      if: |
-        inputs.sign-commits == 'true' && (
-          steps.commandLand.outputs.continue == 'true' ||
-          steps.commandRebase.outputs.continue == 'true' ||
-          steps.commandClose.outputs.continue == 'true'
-        )
 
     - name: Land Pull Request
       shell: bash
