@@ -62,7 +62,7 @@ runs:
         github_token: ${{ inputs.token }}
         skip_ci: "true"
 
-    - uses: shikanime-studio/setup-sapling-action
+    - uses: shikanime-studio/setup-sapling-action@v1
       with:
         username: ${{ inputs.username }}
         email: ${{ inputs.email }}
