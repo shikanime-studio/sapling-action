@@ -17,7 +17,7 @@ These permissions must be set in the GitHub App settings interface.
 
 ## Workflow Configuration
 
-Add the following to your `.github/workflows/ci.yml`:
+Add the following to your `.github/workflows/sapling.yaml`:
 
 ```yaml
 name: sapling
