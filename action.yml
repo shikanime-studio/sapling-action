@@ -52,6 +52,7 @@ runs:
         allowed_contexts: pull_request
         permissions: ${{ inputs.permissions }}
         github_token: ${{ inputs.token }}
+        skip_ci: "true"
     - uses: github/command@v1
       id: commandClose
       with:
