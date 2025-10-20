@@ -21,7 +21,7 @@ jobs:
         with:
           github-token: ${{ steps.createGithubAppToken.outputs.token }}
       - uses: DeterminateSystems/magic-nix-cache-action@v13
-      - uses: shikanime-studio/setup-direnv-action@v1
+      - uses: shikanime-studio/direnv-action@v1
       - run: |
           nix flake update
           sl config \
