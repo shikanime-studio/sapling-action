@@ -73,7 +73,7 @@ runs:
 
     - shell: bash
       run: |
-        nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slconfig \
+        nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl config \
           --local ui.username "${{ inputs.username }}" \
           --local ui.email "${{ inputs.email }}"
       if: |
@@ -93,7 +93,7 @@ runs:
         )
     - shell: bash
       run: |
-        nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slconfig \
+        nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl config \
           --local gpg.key "${{ steps.importGPG.outputs.keyid }}" \
           --local commit.gpgsign true
       if: |
@@ -107,17 +107,17 @@ runs:
       run: |
         if [ "${{ steps.commandLand.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandLand.outputs.params }}" ]; then
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slghstack land \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl ghstack land \
             ${{ github.event.issue.pull_request.html_url }}
         elif [ "${{ steps.commandLand.outputs.params }}" == "pr" ]; then
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slpr pull \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl pr pull \
             --goto \
             ${{ github.event.issue.pull_request.html_url }}
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slrebase \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl rebase \
             --dest ${{ inputs.base }}
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slpush \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl push \
             --to ${{ inputs.base }}
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slpush \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl push \
             --delete $(
               gh pr view \
                 ${{ github.event.issue.pull_request.html_url }} \
@@ -134,17 +134,17 @@ runs:
       run: |
         if [ "${{ steps.commandRebase.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandRebase.outputs.params }}" ]; then
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slghstack checkout \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl ghstack checkout \
             ${{ github.event.issue.pull_request.html_url }}
             --dest ${{ inputs.base }}
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slghstack submit
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl ghstack submit
         elif [ "${{ steps.commandRebase.outputs.params }}" == "pr" ]; then
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slpr checkout \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl pr checkout \
             --goto \
             ${{ github.event.issue.pull_request.html_url }}
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slrebase \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl rebase \
             --dest ${{ inputs.base }}
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slpr submit
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl pr submit
         fi
       if: steps.commandRebase.outputs.continue == 'true'
       env:
@@ -155,7 +155,7 @@ runs:
       run: |
         if [ "${{ steps.commandClose.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandClose.outputs.params }}" ]; then
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slghstack action \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl ghstack action \
             --close \
             ${{ github.event.issue.pull_request.html_url }}
         elif [ "${{ steps.commandClose.outputs.params }}" == "pr" ]; then
