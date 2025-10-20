@@ -5,21 +5,20 @@ on:
       - main
   pull_request:
     branches:
-      - gh/*/*/base
       - main
+      - gh/*/*/base
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@v13
+      - uses: actions/checkout@v5
+      - uses: DeterminateSystems/nix-installer-action@v20
         with:
           github-token: ${{ secrets.NIX_GITHUB_TOKEN }}
-      - uses: DeterminateSystems/magic-nix-cache-action@v8
-      - uses: cachix/cachix-action@v12
-        with:
-          name: shikanime
-          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - uses: DeterminateSystems/magic-nix-cache-action@v13
       - name: Check Nix Flake
         run: |
-          nix flake check --show-trace --all-systems --no-pure-eval --accept-flake-config
+          nix flake check \
+            --all-systems \
+            --no-pure-eval \
+            --accept-flake-config

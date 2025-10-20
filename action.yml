@@ -65,7 +65,7 @@ runs:
 
     - shell: bash
       run: |
-        nix run nixpkgs#sapling -- config \
+        sl config \
           --local ui.username "${{ inputs.username }}" \
           --local ui.email "${{ inputs.email }}"
       if: |
@@ -85,13 +85,12 @@ runs:
         )
     - shell: bash
       run: |
-        nix run nixpkgs#sapling -- config \
+        sl config \
           --local gpg.key "${{ steps.importGPG.outputs.keyid }}" \
           --local commit.gpgsign true
       if: |
         inputs.sign-commits == 'true' && (
           steps.commandLand.outputs.continue == 'true' ||
-          steps.commandRebase.outputs.continue == 'true' ||
           steps.commandClose.outputs.continue == 'true'
         )
 
@@ -100,17 +99,17 @@ runs:
       run: |
         if [ "${{ steps.commandLand.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandLand.outputs.params }}" ]; then
-          nix run nixpkgs#sapling -- ghstack land \
+          sl ghstack land \
             ${{ github.event.issue.pull_request.html_url }}
         elif [ "${{ steps.commandLand.outputs.params }}" == "pr" ]; then
-          nix run nixpkgs#sapling -- pr pull \
+          sl pr pull \
             --goto \
             ${{ github.event.issue.pull_request.html_url }}
-          nix run nixpkgs#sapling -- rebase \
+          sl rebase \
             --dest ${{ inputs.base }}
-          nix run nixpkgs#sapling -- push \
+          sl push \
             --to ${{ inputs.base }}
-          nix run nixpkgs#sapling -- push \
+          sl push \
             --delete $(
               gh pr view \
                 ${{ github.event.issue.pull_request.html_url }} \
@@ -127,18 +126,17 @@ runs:
       run: |
         if [ "${{ steps.commandRebase.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandRebase.outputs.params }}" ]; then
-          nix run nixpkgs#sapling -- ghstack checkout \
+          sl ghstack checkout \
             ${{ github.event.issue.pull_request.html_url }}
-          nix run nixpkgs#sapling -- rebase \
             --dest ${{ inputs.base }}
-          nix run nixpkgs#sapling -- ghstack submit
+          sl ghstack submit
         elif [ "${{ steps.commandRebase.outputs.params }}" == "pr" ]; then
-          nix run nixpkgs#sapling -- pr checkout \
+          sl pr checkout \
             --goto \
             ${{ github.event.issue.pull_request.html_url }}
-          nix run nixpkgs#sapling -- rebase \
+          sl rebase \
             --dest ${{ inputs.base }}
-          nix run nixpkgs#sapling -- pr submit
+          sl pr submit
         fi
       if: steps.commandRebase.outputs.continue == 'true'
       env:
@@ -149,11 +147,11 @@ runs:
       run: |
         if [ "${{ steps.commandClose.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandClose.outputs.params }}" ]; then
-          nix run nixpkgs#sapling -- ghstack action \
+          sl ghstack action \
             --close \
             ${{ github.event.issue.pull_request.html_url }}
         elif [ "${{ steps.commandClose.outputs.params }}" == "pr" ]; then
-          nix run nixpkgs#gh -- pr close \
+          gh pr close \
             --delete-branch \
             ${{ github.event.issue.pull_request.html_url }}
         fi
