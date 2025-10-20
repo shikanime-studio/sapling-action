@@ -36,7 +36,7 @@ jobs:
           fetch-depth: 0
       - uses: DeterminateSystems/nix-installer-action@v13
       - uses: DeterminateSystems/magic-nix-cache-action@v8
-      - uses: shikanime-studio/sapling-action@v2
+      - uses: shikanime-studio/sapling-action@v3
         with:
           sign-commits: true
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}}
@@ -67,7 +67,7 @@ jobs:
         with:
           github-token: ${{ steps.createGithubAppToken.outputs.token }}
       - uses: DeterminateSystems/magic-nix-cache-action@v8
-      - uses: shikanime-studio/sapling-action@v2
+      - uses: shikanime-studio/sapling-action@v3
         with:
           token: ${{ steps.createGithubAppToken.outputs.token }}
           sign-commits: true
