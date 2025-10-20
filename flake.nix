@@ -61,6 +61,7 @@
               flake-checker.enable = true;
             };
             packages = [
+              pkgs.direnv
               pkgs.gh
               pkgs.sapling
             ];
