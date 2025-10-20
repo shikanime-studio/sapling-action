@@ -5,6 +5,14 @@ branding:
   color: gray-dark
 description: Land a pull request
 inputs:
+  flake-url:
+    description: Nix flake URL or path to develop from
+    required: false
+    default: "."
+  extra-args:
+    description: Extra arguments to pass to `nix develop`
+    required: false
+    default: ""
   token:
     description: The GitHub Token
     required: false
@@ -65,7 +73,7 @@ runs:
 
     - shell: bash
       run: |
-        sl config \
+        nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slconfig \
           --local ui.username "${{ inputs.username }}" \
           --local ui.email "${{ inputs.email }}"
       if: |
@@ -85,7 +93,7 @@ runs:
         )
     - shell: bash
       run: |
-        sl config \
+        nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slconfig \
           --local gpg.key "${{ steps.importGPG.outputs.keyid }}" \
           --local commit.gpgsign true
       if: |
@@ -99,17 +107,17 @@ runs:
       run: |
         if [ "${{ steps.commandLand.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandLand.outputs.params }}" ]; then
-          sl ghstack land \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slghstack land \
             ${{ github.event.issue.pull_request.html_url }}
         elif [ "${{ steps.commandLand.outputs.params }}" == "pr" ]; then
-          sl pr pull \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slpr pull \
             --goto \
             ${{ github.event.issue.pull_request.html_url }}
-          sl rebase \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slrebase \
             --dest ${{ inputs.base }}
-          sl push \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slpush \
             --to ${{ inputs.base }}
-          sl push \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slpush \
             --delete $(
               gh pr view \
                 ${{ github.event.issue.pull_request.html_url }} \
@@ -126,17 +134,17 @@ runs:
       run: |
         if [ "${{ steps.commandRebase.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandRebase.outputs.params }}" ]; then
-          sl ghstack checkout \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slghstack checkout \
             ${{ github.event.issue.pull_request.html_url }}
             --dest ${{ inputs.base }}
-          sl ghstack submit
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slghstack submit
         elif [ "${{ steps.commandRebase.outputs.params }}" == "pr" ]; then
-          sl pr checkout \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slpr checkout \
             --goto \
             ${{ github.event.issue.pull_request.html_url }}
-          sl rebase \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slrebase \
             --dest ${{ inputs.base }}
-          sl pr submit
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slpr submit
         fi
       if: steps.commandRebase.outputs.continue == 'true'
       env:
@@ -147,7 +155,7 @@ runs:
       run: |
         if [ "${{ steps.commandClose.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandClose.outputs.params }}" ]; then
-          sl ghstack action \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} slghstack action \
             --close \
             ${{ github.event.issue.pull_request.html_url }}
         elif [ "${{ steps.commandClose.outputs.params }}" == "pr" ]; then
