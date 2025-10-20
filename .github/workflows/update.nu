@@ -2,11 +2,13 @@
 #! nix develop --impure --command nu
 
 def get_latest_action []: string -> string {
-    gh api $"repos/($in)/tags"
-    | from json
-    | get name
-    | where ($it =~ '^v[0-9]+$')
-    | first
+    let tags = gh api $"repos/($in)/tags" | from json | get name
+    let semver = $tags | where ($it =~ '^v[0-9]+$')
+    if ($semver | is-empty) {
+        $in
+    } else {
+        $semver | first
+    }
 }
 
 def parse_action []: nothing -> string {
