@@ -11,19 +11,25 @@ def get_latest_action []: string -> string {
     }
 }
 
-def parse_action []: nothing -> string {
-    $in | split row "@" | first
-}
-
-def parse_version []: nothing -> string {
-    $in | split row "@" | last
+def parse_action []: nothing -> record {
+    let parts = ($in | split row "@")
+    if ($parts | length) > 1 {
+        { repo: ($parts | first), version: ($parts | last) }
+    } else {
+        { repo: ($parts | first), version: "" }
+    }
 }
 
 def update_workflow_job_step_actions []: record -> record {
     if "uses" in $in {
         let action = $in.uses | parse_action
-        let version = $action | get_latest_action
-        $in | update uses $"($action)@($version)"
+        let next_version = $action.repo | get_latest_action
+        let next_uses = if ($next_version | is-empty) {
+            $"($action.repo)@($action.version)"
+        } else {
+            $"($action.repo)@($next_version)"
+        }
+        $in | update uses $next_uses
     } else {
         $in
     }
