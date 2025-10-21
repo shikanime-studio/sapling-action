@@ -73,7 +73,7 @@ runs:
 
     - shell: bash
       run: |
-        nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl config \
+        nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -c sl config \
           --local ui.username "${{ inputs.username }}" \
           --local ui.email "${{ inputs.email }}"
       if: |
@@ -93,7 +93,7 @@ runs:
         )
     - shell: bash
       run: |
-        nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl config \
+        nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -c sl config \
           --local gpg.key "${{ steps.importGPG.outputs.keyid }}" \
           --local commit.gpgsign true
       if: |
@@ -107,17 +107,17 @@ runs:
       run: |
         if [ "${{ steps.commandLand.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandLand.outputs.params }}" ]; then
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl ghstack land \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -c sl ghstack land \
             ${{ github.event.issue.pull_request.html_url }}
         elif [ "${{ steps.commandLand.outputs.params }}" == "pr" ]; then
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl pr pull \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -c sl pr pull \
             --goto \
             ${{ github.event.issue.pull_request.html_url }}
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl rebase \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -c sl rebase \
             --dest ${{ inputs.base }}
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl push \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -c sl push \
             --to ${{ inputs.base }}
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl push \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -c sl push \
             --delete $(
               gh pr view \
                 ${{ github.event.issue.pull_request.html_url }} \
@@ -134,17 +134,17 @@ runs:
       run: |
         if [ "${{ steps.commandRebase.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandRebase.outputs.params }}" ]; then
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl ghstack checkout \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -c sl ghstack checkout \
             ${{ github.event.issue.pull_request.html_url }}
             --dest ${{ inputs.base }}
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl ghstack submit
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -c sl ghstack submit
         elif [ "${{ steps.commandRebase.outputs.params }}" == "pr" ]; then
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl pr checkout \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -c sl pr checkout \
             --goto \
             ${{ github.event.issue.pull_request.html_url }}
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl rebase \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -c sl rebase \
             --dest ${{ inputs.base }}
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl pr submit
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -c sl pr submit
         fi
       if: steps.commandRebase.outputs.continue == 'true'
       env:
@@ -155,7 +155,7 @@ runs:
       run: |
         if [ "${{ steps.commandClose.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandClose.outputs.params }}" ]; then
-          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} sl ghstack action \
+          nix develop "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -c sl ghstack action \
             --close \
             ${{ github.event.issue.pull_request.html_url }}
         elif [ "${{ steps.commandClose.outputs.params }}" == "pr" ]; then
