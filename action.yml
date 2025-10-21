@@ -8,7 +8,7 @@ inputs:
   flake-url:
     description: Nix flake URL or path to develop from
     required: false
-    default: "."
+    default: nixpkgs#sapling
   extra-args:
     description: Extra arguments to pass to `nix develop`
     required: false
