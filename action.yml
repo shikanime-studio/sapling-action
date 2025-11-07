@@ -5,42 +5,42 @@ branding:
   color: gray-dark
 description: Land a pull request
 inputs:
-  flake-url:
-    description: Nix flake URL or path to develop from
-    required: false
-    default: nixpkgs#sapling
+  base:
+    description: The base branch to rebase onto
+    default: main
+  email:
+    description: The email to use
+    default: github-actions[bot]@users.noreply.github.com
   extra-args:
     description: Extra arguments to pass to `nix run`
     required: false
     default: ""
-  token:
+  flake-url:
+    description: Nix flake URL or path to develop from
+    required: false
+    default: nixpkgs#sapling
+  github-token:
     description: The GitHub Token
     required: false
     default: ${{ github.token }}
-  base:
-    description: The base branch to rebase onto
-    default: main
-  reaction:
-    description: The reaction to add
-    default: rocket
-  permissions:
-    description: The permissions to check
-    default: write,maintain,admin
-  username:
-    description: The username to use
-    default: github-actions[bot]
-  email:
-    description: The email to use
-    default: github-actions[bot]@users.noreply.github.com
-  sign-commits:
-    description: Set to true if the action should sign the commit with GPG
-    default: "false"
-  gpg-private-key:
-    description: GPG Private Key with which to sign the commits in the PR to be created
-    default: ""
   gpg-passphrase:
     description: GPG Private Key Passphrase for the GPG Private Key with which to sign the commits in the PR to be created
     default: ""
+  gpg-private-key:
+    description: GPG Private Key with which to sign the commits in the PR to be created
+    default: ""
+  permissions:
+    description: The permissions to check
+    default: write,maintain,admin
+  reaction:
+    description: The reaction to add
+    default: rocket
+  sign-commits:
+    description: Set to true if the action should sign the commit with GPG
+    default: "false"
+  username:
+    description: The username to use
+    default: github-actions[bot]
 runs:
   using: composite
   steps:
@@ -51,7 +51,7 @@ runs:
         reaction: ${{ inputs.reaction }}
         allowed_contexts: pull_request
         permissions: ${{ inputs.permissions }}
-        github_token: ${{ inputs.token }}
+        github_token: ${{ inputs.github-token }}
     - uses: github/command@v1
       id: commandRebase
       with:
@@ -59,7 +59,7 @@ runs:
         reaction: ${{ inputs.reaction }}
         allowed_contexts: pull_request
         permissions: ${{ inputs.permissions }}
-        github_token: ${{ inputs.token }}
+        github_token: ${{ inputs.github-token }}
         skip_ci: "true"
     - uses: github/command@v1
       id: commandClose
@@ -68,7 +68,7 @@ runs:
         reaction: ${{ inputs.reaction }}
         allowed_contexts: pull_request
         permissions: ${{ inputs.permissions }}
-        github_token: ${{ inputs.token }}
+        github_token: ${{ inputs.github-token }}
         skip_ci: "true"
 
     - shell: bash
@@ -127,7 +127,7 @@ runs:
         fi
       if: steps.commandLand.outputs.continue == 'true'
       env:
-        GH_TOKEN: ${{ inputs.token }}
+        GH_TOKEN: ${{ inputs.github-token }}
 
     - name: Rebase Pull Request
       shell: bash
@@ -148,7 +148,7 @@ runs:
         fi
       if: steps.commandRebase.outputs.continue == 'true'
       env:
-        GH_TOKEN: ${{ inputs.token }}
+        GH_TOKEN: ${{ inputs.github-token }}
 
     - name: Close Pull Request
       shell: bash
@@ -165,4 +165,4 @@ runs:
         fi
       if: steps.commandClose.outputs.continue == 'true'
       env:
-        GH_TOKEN: ${{ inputs.token }}
+        GH_TOKEN: ${{ inputs.github-token }}
