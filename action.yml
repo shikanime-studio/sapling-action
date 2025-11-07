@@ -95,6 +95,7 @@ runs:
       if: |
         inputs.sign-commits && (
           steps.commandLand.outputs.continue == 'true' ||
+          steps.commandRebase.outputs.continue == 'true' ||
           steps.commandClose.outputs.continue == 'true'
         )
 
