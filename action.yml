@@ -34,7 +34,7 @@ inputs:
     default: rocket
   sign-commits:
     description: Set to true if the action should sign the commit with GPG
-    default: "false"
+    default: false
   username:
     description: The username to use
     default: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
@@ -82,7 +82,7 @@ runs:
         gpg_private_key: ${{ inputs.gpg-private-key }}
         passphrase: ${{ inputs.gpg-passphrase }}
       if: |
-        inputs.sign-commits == 'true' && (
+        inputs.sign-commits && (
           steps.commandLand.outputs.continue == 'true' ||
           steps.commandRebase.outputs.continue == 'true' ||
           steps.commandClose.outputs.continue == 'true'
@@ -93,7 +93,7 @@ runs:
           --local gpg.key "${{ steps.importGPG.outputs.keyid }}" \
           --local commit.gpgsign true
       if: |
-        inputs.sign-commits == 'true' && (
+        inputs.sign-commits && (
           steps.commandLand.outputs.continue == 'true' ||
           steps.commandClose.outputs.continue == 'true'
         )
