@@ -103,6 +103,8 @@ runs:
       run: |
         if [ "${{ steps.commandLand.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandLand.outputs.params }}" ]; then
+          nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- rebase \
+            --dest ${{ inputs.base }}
           nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- ghstack land \
             ${{ github.event.issue.pull_request.html_url }}
         elif [ "${{ steps.commandLand.outputs.params }}" == "pr" ]; then
