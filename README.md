@@ -34,8 +34,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: DeterminateSystems/nix-installer-action@v13
-      - uses: DeterminateSystems/magic-nix-cache-action@v8
+      - uses: shikanime-studio/setup-nix-action@v1
       - uses: shikanime-studio/sapling-action@v3
         with:
           sign-commits: true
