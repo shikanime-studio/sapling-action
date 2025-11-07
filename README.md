@@ -37,9 +37,9 @@ jobs:
       - uses: shikanime-studio/setup-nix-action@v1
       - uses: shikanime-studio/sapling-action@v3
         with:
-          sign-commits: true
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}}
           gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}}
+          sign-commits: true
 ```
 
 or using a GitHub Application:
@@ -68,9 +68,9 @@ jobs:
       - uses: shikanime-studio/sapling-action@v3
         with:
           github-token: ${{ steps.createGithubAppToken.outputs.token }}
-          sign-commits: true
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}}
           gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}}
+          sign-commits: true
 ```
 
 This configuration will enable the Sapling action to run whenever a comment is
