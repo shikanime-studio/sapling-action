@@ -132,6 +132,7 @@ runs:
            [ -z "${{ steps.commandRebase.outputs.params }}" ]; then
           nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- ghstack checkout \
             ${{ github.event.issue.pull_request.html_url }}
+          nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- rebase \
             --dest ${{ inputs.base }}
           nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- ghstack submit
         elif [ "${{ steps.commandRebase.outputs.params }}" == "pr" ]; then
