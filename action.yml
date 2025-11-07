@@ -8,9 +8,6 @@ inputs:
   base:
     description: The base branch to rebase onto
     default: main
-  email:
-    description: The email to use
-    default: github-actions[bot]@users.noreply.github.com
   extra-args:
     description: Extra arguments to pass to `nix run`
     required: false
@@ -40,7 +37,7 @@ inputs:
     default: "false"
   username:
     description: The username to use
-    default: github-actions[bot]
+    default: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
 runs:
   using: composite
   steps:
@@ -74,8 +71,7 @@ runs:
     - shell: bash
       run: |
         nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- config \
-          --local ui.username "${{ inputs.username }}" \
-          --local ui.email "${{ inputs.email }}"
+          --local ui.username "${{ inputs.username }}"
       if: |
         steps.commandLand.outputs.continue == 'true' ||
         steps.commandRebase.outputs.continue == 'true' ||
