@@ -34,7 +34,7 @@ inputs:
     default: rocket
   sign-commits:
     description: Set to true if the action should sign the commit with GPG
-    default: 'false'
+    default: "false"
   username:
     description: The username to use
     default: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
