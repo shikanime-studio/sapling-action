@@ -74,11 +74,11 @@
         "nixpkgs": "nixpkgs"
       },
       "locked": {
-        "lastModified": 1762530382,
-        "narHash": "sha256-EOT8gmZ21PQB0yuj+AaLUs0KJ6NZWdnxsWV90caSxi8=",
+        "lastModified": 1762645230,
+        "narHash": "sha256-R01IFAvCQAxgVKoA7tQm5BVyCKuvmkUJnI6/F9Hzm4s=",
         "owner": "cachix",
         "repo": "devenv",
-        "rev": "7e9b41684b8d46eed977382883c99143868bd497",
+        "rev": "ec912ab6ad9803707ede117020654fffd30d9815",
         "type": "github"
       },
       "original": {
@@ -117,11 +117,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1762451126,
-        "narHash": "sha256-s8hRCrE6QN1VZJJErlQNgyaLeGt1aVrx7XqAXP3rdjs=",
+        "lastModified": 1762576423,
+        "narHash": "sha256-WO90j6LASUHqqodq4ELN2ZaR978Hk0EhJLTk52Sj2mI=",
         "owner": "shikanime-studio",
         "repo": "devlib",
-        "rev": "be75afa44ce6cbb5301a0c06b6b8ed01f5bcbbe8",
+        "rev": "a6a10536c1a6c180fe091fea7139bf2df1302b50",
         "type": "github"
       },
       "original": {
@@ -562,11 +562,11 @@
     },
     "nixpkgs_7": {
       "locked": {
-        "lastModified": 1762361079,
-        "narHash": "sha256-lz718rr1BDpZBYk7+G8cE6wee3PiBUpn8aomG/vLLiY=",
+        "lastModified": 1762482733,
+        "narHash": "sha256-g/da4FzvckvbiZT075Sb1/YDNDr+tGQgh4N8i5ceYMg=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "ffcdcf99d65c61956d882df249a9be53e5902ea5",
+        "rev": "e1ebeec86b771e9d387dd02d82ffdc77ac753abc",
         "type": "github"
       },
       "original": {
