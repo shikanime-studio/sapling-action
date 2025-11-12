@@ -155,7 +155,7 @@ runs:
       run: |
         if [ "${{ steps.commandClose.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandClose.outputs.params }}" ]; then
-          nix run "${{ inputs.registry }}#ghaction" ${{ inputs.extra-args }} -- action \
+          nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- action \
             --close \
             ${{ github.event.issue.pull_request.html_url }}
         elif [ "${{ steps.commandClose.outputs.params }}" == "pr" ]; then
