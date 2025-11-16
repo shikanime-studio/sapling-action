@@ -57,7 +57,7 @@ runs:
         allowed_contexts: pull_request
         permissions: ${{ inputs.permissions }}
         github_token: ${{ inputs.github-token }}
-        skip_ci: "true"
+        skip_ci: true
     - uses: github/command@v1
       id: commandClose
       with:
@@ -66,7 +66,7 @@ runs:
         allowed_contexts: pull_request
         permissions: ${{ inputs.permissions }}
         github_token: ${{ inputs.github-token }}
-        skip_ci: "true"
+        skip_ci: true
 
     - shell: bash
       run: |
@@ -109,7 +109,7 @@ runs:
         github_username = shikanime
         EOF
       if: |
-        steps.commandLand.outputs.params == 'ghstack' && (
+        steps.commandLand.outputs.params != 'pr' && (
           steps.commandLand.outputs.continue == 'true' ||
           steps.commandRebase.outputs.continue == 'true' ||
           steps.commandClose.outputs.continue == 'true'
