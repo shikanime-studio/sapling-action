@@ -102,7 +102,6 @@ runs:
       run: |
     - shell: bash
       run: |
-        mkdir -p ~/.config/ghstack
         cat > ~/.ghstackrc <<EOF
         [ghstack]
         github_url = github.com
