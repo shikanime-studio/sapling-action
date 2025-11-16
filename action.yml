@@ -70,7 +70,7 @@ runs:
 
     - shell: bash
       run: |
-        nix run "${{ inputs.registry }}#sapling" "${{ inputs.extra-args }} -- config \
+        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- config \
           --local ui.username "${{ inputs.username }}"
       if: |
         steps.commandLand.outputs.continue == 'true' ||
@@ -89,7 +89,7 @@ runs:
         )
     - shell: bash
       run: |
-        nix run "${{ inputs.registry }}#sapling" "${{ inputs.extra-args }} -- config \
+        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- config \
           --local gpg.key "${{ steps.importGPG.outputs.keyid }}" \
           --local commit.gpgsign true
       if: |
@@ -120,19 +120,19 @@ runs:
       run: |
         if [ "${{ steps.commandLand.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandLand.outputs.params }}" ]; then
-          nix run "${{ inputs.registry }}#sapling" "${{ inputs.extra-args }} -- rebase \
+          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- rebase \
             --dest ${{ inputs.base }}
-          nix run "${{ inputs.registry }}#sapling" "${{ inputs.extra-args }} -- ghstack land \
+          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- ghstack land \
             ${{ github.event.issue.pull_request.html_url }}
         elif [ "${{ steps.commandLand.outputs.params }}" == "pr" ]; then
-          nix run "${{ inputs.registry }}#sapling" "${{ inputs.extra-args }} -- pr pull \
+          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr pull \
             --goto \
             ${{ github.event.issue.pull_request.html_url }}
-          nix run "${{ inputs.registry }}#sapling" "${{ inputs.extra-args }} -- rebase \
+          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- rebase \
             --dest ${{ inputs.base }}
-          nix run "${{ inputs.registry }}#sapling" "${{ inputs.extra-args }} -- push \
+          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- push \
             --to ${{ inputs.base }}
-          nix run "${{ inputs.registry }}#sapling" "${{ inputs.extra-args }} -- push \
+          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- push \
             --delete $(
               gh pr view \
                 ${{ github.event.issue.pull_request.html_url }} \
@@ -149,18 +149,18 @@ runs:
       run: |
         if [ "${{ steps.commandRebase.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandRebase.outputs.params }}" ]; then
-          nix run "${{ inputs.registry }}#sapling" "${{ inputs.extra-args }} -- ghstack checkout \
+          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- ghstack checkout \
             ${{ github.event.issue.pull_request.html_url }}
-          nix run "${{ inputs.registry }}#sapling" "${{ inputs.extra-args }} -- rebase \
+          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- rebase \
             --dest ${{ inputs.base }}
-          nix run "${{ inputs.registry }}#sapling" "${{ inputs.extra-args }} -- ghstack submit
+          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- ghstack submit
         elif [ "${{ steps.commandRebase.outputs.params }}" == "pr" ]; then
-          nix run "${{ inputs.registry }}#sapling" "${{ inputs.extra-args }} -- pr checkout \
+          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr checkout \
             --goto \
             ${{ github.event.issue.pull_request.html_url }}
-          nix run "${{ inputs.registry }}#sapling" "${{ inputs.extra-args }} -- rebase \
+          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- rebase \
             --dest ${{ inputs.base }}
-          nix run "${{ inputs.registry }}#sapling" "${{ inputs.extra-args }} -- pr submit
+          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr submit
         fi
       if: steps.commandRebase.outputs.continue == 'true'
       env:
@@ -171,7 +171,7 @@ runs:
       run: |
         if [ "${{ steps.commandClose.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandClose.outputs.params }}" ]; then
-          nix run "${{ inputs.registry }}#sapling" "${{ inputs.extra-args }} -- ghstack action \
+          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- ghstack action \
             --close \
             ${{ github.event.issue.pull_request.html_url }}
         elif [ "${{ steps.commandClose.outputs.params }}" == "pr" ]; then
