@@ -67,7 +67,6 @@ runs:
         permissions: ${{ inputs.permissions }}
         github_token: ${{ inputs.github-token }}
         skip_ci: true
-
     - shell: bash
       run: |
         nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- config \
@@ -99,7 +98,7 @@ runs:
           steps.commandClose.outputs.continue == 'true'
         )
     - shell: bash
-      run: |
+      run: ""
     - shell: bash
       run: |
         cat > ~/.ghstackrc <<EOF
@@ -114,7 +113,6 @@ runs:
           steps.commandRebase.outputs.continue == 'true' ||
           steps.commandClose.outputs.continue == 'true'
         )
-
     - name: Land Pull Request
       shell: bash
       run: |
@@ -143,7 +141,6 @@ runs:
       if: steps.commandLand.outputs.continue == 'true'
       env:
         GH_TOKEN: ${{ inputs.github-token }}
-
     - name: Rebase Pull Request
       shell: bash
       run: |
@@ -165,7 +162,6 @@ runs:
       if: steps.commandRebase.outputs.continue == 'true'
       env:
         GH_TOKEN: ${{ inputs.github-token }}
-
     - name: Close Pull Request
       shell: bash
       run: |
