@@ -16,6 +16,10 @@ inputs:
     description: The GitHub Token
     required: false
     default: ${{ github.token }}
+  ghstack-username:
+    description: Ghstack username
+    required: false
+    default: github-actions
   gpg-passphrase:
     description: GPG Private Key Passphrase for the GPG Private Key with which to sign the commits in the PR to be created
     default: ""
@@ -105,7 +109,7 @@ runs:
         [ghstack]
         github_url = github.com
         github_oauth = ${{ inputs.github-token }}
-        github_username = shikanime
+        github_username = ${{ inputs.ghstack-username }}
         EOF
       if: |
         steps.commandLand.outputs.params != 'pr' && (
