@@ -122,7 +122,7 @@ runs:
            [ -z "${{ steps.commandLand.outputs.params }}" ]; then
           nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- rebase \
             --dest ${{ inputs.base }}
-          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- ghstack land \
+          nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- land \
             ${{ github.event.issue.pull_request.html_url }}
         elif [ "${{ steps.commandLand.outputs.params }}" == "pr" ]; then
           nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr pull \
@@ -149,11 +149,11 @@ runs:
       run: |
         if [ "${{ steps.commandRebase.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandRebase.outputs.params }}" ]; then
-          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- ghstack checkout \
+          nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- checkout \
             ${{ github.event.issue.pull_request.html_url }}
           nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- rebase \
             --dest ${{ inputs.base }}
-          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- ghstack submit
+          nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- submit
         elif [ "${{ steps.commandRebase.outputs.params }}" == "pr" ]; then
           nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr checkout \
             --goto \
@@ -171,7 +171,7 @@ runs:
       run: |
         if [ "${{ steps.commandClose.outputs.params }}" == "ghstack" ] || \
            [ -z "${{ steps.commandClose.outputs.params }}" ]; then
-          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- ghstack action \
+          nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- action \
             --close \
             ${{ github.event.issue.pull_request.html_url }}
         elif [ "${{ steps.commandClose.outputs.params }}" == "pr" ]; then
