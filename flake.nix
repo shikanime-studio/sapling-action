@@ -40,7 +40,12 @@
       ];
       perSystem = _: {
         devenv.shells.default.imports = [
-          devlib.devenvModules.shikanime-studio
+          devlib.devenvModules.docs
+          devlib.devenvModules.formats
+          devlib.devenvModules.github
+          devlib.devenvModules.nix
+          devlib.devenvModules.shell
+          devlib.devenvModules.shikanime
         ];
       };
       systems = [
