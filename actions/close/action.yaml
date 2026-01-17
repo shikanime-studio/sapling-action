@@ -84,11 +84,7 @@ runs:
         github_oauth = ${{ inputs.github-token }}
         github_username = ${{ inputs.username }}
         EOF
-      if: |
-        steps.pull_request.outputs.method == 'ghstack' &&
-        steps.command.outputs.continue == 'true'
-    - shell: bash
-      run: |
+
         nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- action \
           --close \
           "${{ github.event.issue.pull_request.html_url }}"

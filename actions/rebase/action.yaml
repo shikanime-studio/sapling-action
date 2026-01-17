@@ -122,21 +122,18 @@ runs:
           --local commit.gpgsign true
       if: |
         inputs.sign-commits == 'true' &&
+        steps.pull_request.outputs.method == 'slpr' &&
         steps.command.outputs.continue == 'true'
     - shell: bash
       run: |
+        PR_URL="${{ github.event.issue.pull_request.html_url }}"
+
         cat > ~/.ghstackrc <<EOF
         [ghstack]
         github_url = github.com
         github_oauth = ${{ inputs.github-token }}
         github_username = ${{ inputs.username }}
         EOF
-      if: |
-        steps.pull_request.outputs.method == 'ghstack' &&
-        steps.command.outputs.continue == 'true'
-    - shell: bash
-      run: |
-        PR_URL="${{ github.event.issue.pull_request.html_url }}"
 
         nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- checkout \
           "$PR_URL"

@@ -35,7 +35,7 @@ inputs:
     description: GPG Private Key with which to sign the commits in the PR to be created
     default: ""
   method:
-    description: Publication method, one of 'ghstack' or 'slpr'
+    description: Publication method, one of 'ghstack', 'slpr' or 'ghpr'
     required: false
     default: ghstack
   registry:
@@ -65,21 +65,12 @@ runs:
         nix run "${{ inputs.flake-url }}#sapling" ${{ inputs.extra-args }} -- config \
           --local ui.username="${{ inputs.fullname }} <${{ inputs.email }}>"
       shell: bash
-    - if: ${{ !contains('ghstack,slpr', inputs.method) }}
+    - if: ${{ !contains('ghstack,slpr,ghpr', inputs.method) }}
       run: |
-        echo "Unknown update method '${{ inputs.method }}'. Expected 'ghstack' or 'slpr'."
+        echo "Unknown update method '${{ inputs.method }}'. Expected 'ghstack', 'slpr' or 'ghpr'."
         exit 1
       shell: bash
-    - if: ${{ inputs.method == 'ghstack' }}
-      run: |
-        cat > ~/.ghstackrc <<EOF
-        [ghstack]
-        github_url = github.com
-        github_oauth = ${{ inputs.github-token }}
-        github_username = ${{ inputs.username }}
-        EOF
-      shell: bash
-    - if: ${{ inputs.sign-commits }}
+    - if: ${{ inputs.sign-commits && inputs.method == 'slpr' }}
       run: |
         nix run "${{ inputs.flake-url }}#sapling" ${{ inputs.extra-args }} -- config \
           --local commit.gpgsign true \
@@ -93,6 +84,13 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github-token }}
       if: inputs.method == 'ghstack'
       run: |
+        cat > ~/.ghstackrc <<EOF
+        [ghstack]
+        github_url = github.com
+        github_oauth = ${{ inputs.github-token }}
+        github_username = ${{ inputs.username }}
+        EOF
+
         nix run "${{ inputs.flake-url }}#ghstack" ${{ inputs.extra-args }} -- \
           submit
       shell: bash
@@ -102,4 +100,46 @@ runs:
       run: |
         nix run "${{ inputs.flake-url }}#sapling" ${{ inputs.extra-args }} -- pr \
           submit
+      shell: bash
+    - env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      if: inputs.method == 'ghpr'
+      run: |
+        BASE="${{ inputs.base }}"
+        USERNAME="${{ inputs.username }}"
+
+        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- git init \
+          --git-repo . \
+          --colocate || true
+        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- git fetch \
+          --remote origin
+
+        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+          --repo templates.git_push_bookmark \
+          "\"${USERNAME}/push-\" ++ change_id.short()"
+
+        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- git push \
+          --change @
+
+        PUSH_BRANCH=$(nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- log \
+          --limit 1 \
+          --template "{{bookmarks}}" \
+          @)
+
+        EXISTING=$(gh pr list \
+          --head "$PUSH_BRANCH" \
+          --base "$BASE" \
+          --state open \
+          --json number \
+          -q '.[0].number' || true)
+
+        if [ -z "$EXISTING" ]; then
+          gh pr create \
+            --head "$PUSH_BRANCH" \
+            --base "$BASE" \
+            --title "${{ inputs.commit-message }}" \
+            --body "Automated flake update."
+        else
+          echo "Existing open PR #$EXISTING for $PUSH_BRANCH -> $BASE, not creating a new one."
+        fi
       shell: bash
