@@ -34,7 +34,7 @@ inputs:
     required: false
     default: "false"
   username:
-    description: Username for ghstack and jj
+    description: Username
     required: false
     default: github-actions
 runs:

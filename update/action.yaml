@@ -14,14 +14,14 @@ inputs:
     required: false
     default: Update Flake
   email:
-    description: Email for Sapling ui.username
+    description: Email
     default: github-actions[bot]@users.noreply.github.com
   extra-args:
     description: Extra arguments to pass to `nix run`
     required: false
     default: ""
   fullname:
-    description: Full name for Sapling ui.username
+    description: Full name
     required: false
     default: github-actions[bot]
   github-token:
@@ -46,7 +46,7 @@ inputs:
     description: Set to true if the action should sign the commit with GPG
     default: false
   username:
-    description: Username for ghstack and jj
+    description: Username
     default: github-actions
 runs:
   using: composite

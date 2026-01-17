@@ -6,7 +6,7 @@ inputs:
     required: false
     default: main
   email:
-    description: Email for Sapling ui.username
+    description: Email
     required: false
     default: github-actions[bot]@users.noreply.github.com
   extra-args:
@@ -14,7 +14,7 @@ inputs:
     required: false
     default: ""
   fullname:
-    description: Full name for Sapling ui.username
+    description: Full name
     required: false
     default: github-actions[bot]
   github-token:
@@ -46,7 +46,7 @@ inputs:
     required: false
     default: "false"
   username:
-    description: Username for ghstack and jj
+    description: Username
     required: false
     default: github-actions
 runs:
