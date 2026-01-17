@@ -1,0 +1,59 @@
+name: backport
+description: Backport pull request from a PR comment
+inputs:
+  extra-args:
+    description: Extra arguments to pass to `nix run`
+    required: false
+    default: ""
+  github-token:
+    description: The GitHub Token
+    required: false
+    default: ${{ github.token }}
+  permissions:
+    description: Permissions to require for the command
+    required: false
+    default: write,maintain,admin
+  reaction:
+    description: Reaction to add to the triggering comment
+    required: false
+    default: rocket
+  registry:
+    description: Nix registry to use
+    required: false
+    default: nixpkgs
+runs:
+  using: composite
+  steps:
+    - uses: github/command@v1
+      id: command
+      with:
+        command: .backport
+        reaction: ${{ inputs.reaction }}
+        allowed_contexts: pull_request
+        permissions: ${{ inputs.permissions }}
+        github_token: ${{ inputs.github-token }}
+        skip_ci: true
+    - name: Backport Pull Request
+      shell: bash
+      run: |
+        TARGET_BRANCH="${{ steps.command.outputs.params }}"
+
+        if [ -z "$TARGET_BRANCH" ]; then
+          echo "Error: backport target branch is required, e.g. '.backport | release-1.0'"
+          exit 1
+        fi
+
+        PR_URL="${{ github.event.issue.pull_request.html_url }}"
+        PR_TITLE=$(gh pr view "$PR_URL" --json title -q .title)
+        HEAD_REF=$(gh pr view "$PR_URL" --json headRefName -q .headRefName)
+
+        NEW_TITLE="Backport: $PR_TITLE"
+
+        gh pr create \
+          --base "$TARGET_BRANCH" \
+          --head "$HEAD_REF" \
+          --title "$NEW_TITLE" \
+          --body-file <(gh pr view "$PR_URL" --json body -q .body)
+      if: steps.command.outputs.continue == 'true'
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}

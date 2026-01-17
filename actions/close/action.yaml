@@ -1,0 +1,96 @@
+name: close
+description: Close pull request from a PR comment
+inputs:
+  extra-args:
+    description: Extra arguments to pass to `nix run`
+    required: false
+    default: ""
+  github-token:
+    description: The GitHub Token
+    required: false
+    default: ${{ github.token }}
+  ghstack-username:
+    description: Ghstack username
+    required: false
+    default: github-actions
+  permissions:
+    description: Permissions to require for the command
+    required: false
+    default: write,maintain,admin
+  reaction:
+    description: Reaction to add to the triggering comment
+    required: false
+    default: rocket
+  registry:
+    description: Nix registry to use
+    required: false
+    default: nixpkgs
+runs:
+  using: composite
+  steps:
+    - uses: github/command@v1
+      id: command
+      with:
+        command: .close
+        reaction: ${{ inputs.reaction }}
+        allowed_contexts: pull_request
+        permissions: ${{ inputs.permissions }}
+        github_token: ${{ inputs.github-token }}
+        skip_ci: true
+    - shell: bash
+      run: |
+        cat > ~/.ghstackrc <<EOF
+        [ghstack]
+        github_url = github.com
+        github_oauth = ${{ inputs.github-token }}
+        github_username = ${{ inputs.ghstack-username }}
+        EOF
+      if: |
+        steps.command.outputs.params != 'pr' &&
+        steps.command.outputs.continue == 'true'
+    - name: Close Pull Request
+      shell: bash
+      run: |
+        PR_URL="${{ github.event.issue.pull_request.html_url }}"
+        PARAMS="${{ steps.command.outputs.params }}"
+        BRANCH=$(gh pr view "$PR_URL" --json headRefName -q .headRefName)
+
+        MODE=""
+
+        if [ -n "$PARAMS" ]; then
+          case "$PARAMS" in
+            gh|ghstack)
+              MODE="ghstack"
+              ;;
+            pr|sapling)
+              MODE="sapling"
+              ;;
+            gh-cli|github)
+              MODE="github"
+              ;;
+            *)
+              MODE="$PARAMS"
+              ;;
+          esac
+        else
+          if [[ "$BRANCH" == gh/* ]]; then
+            MODE="ghstack"
+          elif [[ "$BRANCH" =~ ^pr[0-9]+$ ]]; then
+            MODE="sapling"
+          else
+            MODE="github"
+          fi
+        fi
+
+        if [ "$MODE" = "ghstack" ]; then
+          nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- action \
+            --close \
+            "$PR_URL"
+        else
+          gh pr close \
+            --delete-branch \
+            "$PR_URL"
+        fi
+      if: steps.command.outputs.continue == 'true'
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
