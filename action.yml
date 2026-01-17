@@ -71,15 +71,6 @@ runs:
         permissions: ${{ inputs.permissions }}
         github_token: ${{ inputs.github-token }}
         skip_ci: true
-    - uses: github/command@v1
-      id: commandBackport
-      with:
-        command: .backport
-        reaction: ${{ inputs.reaction }}
-        allowed_contexts: pull_request
-        permissions: ${{ inputs.permissions }}
-        github_token: ${{ inputs.github-token }}
-        skip_ci: true
     - shell: bash
       run: |
         nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- config \
@@ -187,23 +178,5 @@ runs:
             ${{ github.event.issue.pull_request.html_url }}
         fi
       if: steps.commandClose.outputs.continue == 'true'
-      env:
-        GH_TOKEN: ${{ inputs.github-token }}
-    - name: Backport Pull Request
-      shell: bash
-      run: |
-        TARGET_BRANCHES="${{ steps.commandBackport.outputs.params }}"
-        PR_URL="${{ github.event.issue.pull_request.html_url }}"
-        PR_TITLE=$(gh pr view "$PR_URL" --json title -q .title)
-        HEAD_REF=$(gh pr view "$PR_URL" --json headRefName -q .headRefName)
-        NEW_TITLE="Backport: $PR_TITLE"
-        for TARGET_BRANCH in $TARGET_BRANCHES; do
-          gh pr create \
-            --base "$TARGET_BRANCH" \
-            --head "$HEAD_REF" \
-            --title "$NEW_TITLE" \
-            --body-file <(gh pr view "$PR_URL" --json body -q .body)
-        done
-      if: steps.commandBackport.outputs.continue == 'true'
       env:
         GH_TOKEN: ${{ inputs.github-token }}
