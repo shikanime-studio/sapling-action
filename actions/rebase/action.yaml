@@ -102,14 +102,14 @@ runs:
 
         if [ -n "$PARAMS" ]; then
           case "$PARAMS" in
-            gh|ghstack)
+            ghstack)
               MODE="ghstack"
               ;;
-            pr|sapling)
-              MODE="sapling"
+            slpr)
+              MODE="slpr"
               ;;
-            gh-cli|github)
-              MODE="github"
+            ghpr)
+              MODE="ghpr"
               ;;
             *)
               MODE="$PARAMS"
@@ -119,9 +119,9 @@ runs:
           if [[ "$BRANCH" == gh/* ]]; then
             MODE="ghstack"
           elif [[ "$BRANCH" =~ ^pr[0-9]+$ ]]; then
-            MODE="sapling"
+            MODE="slpr"
           else
-            MODE="github"
+            MODE="ghpr"
           fi
         fi
 
@@ -129,15 +129,18 @@ runs:
           nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- checkout \
             "$PR_URL"
           nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- submit
-        elif [ "$MODE" = "sapling" ]; then
+        elif [ "$MODE" = "slpr" ]; then
           nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr checkout \
             --goto \
             "$PR_URL"
           nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- rebase \
             --dest ${{ inputs.base }}
           nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr submit
+        elif [ "$MODE" = "ghpr" ]; then
+          echo "GitHub CLI fallback for rebase is not implemented; use 'ghstack' or 'slpr' modes explicitly."
+          exit 1
         else
-          echo "GitHub CLI fallback for rebase is not implemented; use explicit 'ghstack' or 'pr' params."
+          echo "Unknown rebase mode: '$MODE'. Expected ghstack, slpr, or ghpr."
           exit 1
         fi
       if: steps.command.outputs.continue == 'true'

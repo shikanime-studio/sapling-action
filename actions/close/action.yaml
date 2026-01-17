@@ -59,14 +59,14 @@ runs:
 
         if [ -n "$PARAMS" ]; then
           case "$PARAMS" in
-            gh|ghstack)
+            ghstack)
               MODE="ghstack"
               ;;
-            pr|sapling)
-              MODE="sapling"
+            slpr)
+              MODE="slpr"
               ;;
-            gh-cli|github)
-              MODE="github"
+            ghpr)
+              MODE="ghpr"
               ;;
             *)
               MODE="$PARAMS"
@@ -76,9 +76,9 @@ runs:
           if [[ "$BRANCH" == gh/* ]]; then
             MODE="ghstack"
           elif [[ "$BRANCH" =~ ^pr[0-9]+$ ]]; then
-            MODE="sapling"
+            MODE="slpr"
           else
-            MODE="github"
+            MODE="ghpr"
           fi
         fi
 
@@ -86,10 +86,13 @@ runs:
           nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- action \
             --close \
             "$PR_URL"
-        else
+        elif [ "$MODE" = "slpr" ] || [ "$MODE" = "ghpr" ]; then
           gh pr close \
             --delete-branch \
             "$PR_URL"
+        else
+          echo "Unknown close mode: '$MODE'. Expected ghstack, slpr, or ghpr."
+          exit 1
         fi
       if: steps.command.outputs.continue == 'true'
       env:
