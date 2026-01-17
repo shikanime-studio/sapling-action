@@ -57,6 +57,43 @@ runs:
         permissions: ${{ inputs.permissions }}
         github_token: ${{ inputs.github-token }}
         skip_ci: true
+    - id: pull_request
+      shell: bash
+      run: |
+        PR_URL="${{ github.event.issue.pull_request.html_url }}"
+        PARAMS="${{ steps.command.outputs.params }}"
+        BRANCH=$(gh pr view "$PR_URL" --json headRefName -q .headRefName)
+
+        METHOD=""
+
+        if [ -n "$PARAMS" ]; then
+          case "$PARAMS" in
+            ghstack)
+              METHOD="ghstack"
+              ;;
+            slpr)
+              METHOD="slpr"
+              ;;
+            *)
+              echo "Unknown rebase method param '$PARAMS'. Expected 'ghstack' or 'slpr'."
+              exit 1
+              ;;
+          esac
+        else
+          if [[ "$BRANCH" == gh/* ]]; then
+            METHOD="ghstack"
+          elif [[ "$BRANCH" =~ ^pr[0-9]+$ ]]; then
+            METHOD="slpr"
+          else
+            echo "Unable to determine rebase method from branch '$BRANCH'. Use param 'ghstack' or 'slpr', or follow naming gh/* or prNN."
+            exit 1
+          fi
+        fi
+
+        echo "method=$METHOD" >> "$GITHUB_OUTPUT"
+      if: steps.command.outputs.continue == 'true'
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
     - shell: bash
       run: |
         nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- config \
@@ -89,60 +126,32 @@ runs:
         github_username = ${{ inputs.ghstack-username }}
         EOF
       if: |
-        steps.command.outputs.params != 'pr' &&
+        steps.pull_request.outputs.method == 'ghstack' &&
         steps.command.outputs.continue == 'true'
-    - name: Rebase Pull Request
-      shell: bash
+    - shell: bash
       run: |
         PR_URL="${{ github.event.issue.pull_request.html_url }}"
-        PARAMS="${{ steps.command.outputs.params }}"
-        BRANCH=$(gh pr view "$PR_URL" --json headRefName -q .headRefName)
 
-        MODE=""
+        nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- checkout \
+          "$PR_URL"
+        nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- submit
+      if: |
+        steps.pull_request.outputs.method == 'ghstack' &&
+        steps.command.outputs.continue == 'true'
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+    - shell: bash
+      run: |
+        PR_URL="${{ github.event.issue.pull_request.html_url }}"
 
-        if [ -n "$PARAMS" ]; then
-          case "$PARAMS" in
-            ghstack)
-              MODE="ghstack"
-              ;;
-            slpr)
-              MODE="slpr"
-              ;;
-            ghpr)
-              MODE="ghpr"
-              ;;
-            *)
-              MODE="$PARAMS"
-              ;;
-          esac
-        else
-          if [[ "$BRANCH" == gh/* ]]; then
-            MODE="ghstack"
-          elif [[ "$BRANCH" =~ ^pr[0-9]+$ ]]; then
-            MODE="slpr"
-          else
-            MODE="ghpr"
-          fi
-        fi
-
-        if [ "$MODE" = "ghstack" ]; then
-          nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- checkout \
-            "$PR_URL"
-          nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- submit
-        elif [ "$MODE" = "slpr" ]; then
-          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr checkout \
-            --goto \
-            "$PR_URL"
-          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- rebase \
-            --dest ${{ inputs.base }}
-          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr submit
-        elif [ "$MODE" = "ghpr" ]; then
-          echo "GitHub CLI fallback for rebase is not implemented; use 'ghstack' or 'slpr' modes explicitly."
-          exit 1
-        else
-          echo "Unknown rebase mode: '$MODE'. Expected ghstack, slpr, or ghpr."
-          exit 1
-        fi
-      if: steps.command.outputs.continue == 'true'
+        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr checkout \
+          --goto \
+          "$PR_URL"
+        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- rebase \
+          --dest ${{ inputs.base }}
+        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr submit
+      if: |
+        steps.pull_request.outputs.method == 'slpr' &&
+        steps.command.outputs.continue == 'true'
       env:
         GH_TOKEN: ${{ inputs.github-token }}

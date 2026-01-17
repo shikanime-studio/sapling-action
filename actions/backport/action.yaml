@@ -9,6 +9,10 @@ inputs:
     description: The GitHub Token
     required: false
     default: ${{ github.token }}
+  ghstack-username:
+    description: Ghstack username
+    required: false
+    default: github-actions
   permissions:
     description: Permissions to require for the command
     required: false
@@ -33,9 +37,41 @@ runs:
         permissions: ${{ inputs.permissions }}
         github_token: ${{ inputs.github-token }}
         skip_ci: true
-    - name: Backport Pull Request
+    - id: pull_request
       shell: bash
       run: |
+        PR_URL="${{ github.event.issue.pull_request.html_url }}"
+        BRANCH=$(gh pr view "$PR_URL" --json headRefName -q .headRefName)
+
+        METHOD=""
+
+        if [[ "$BRANCH" == gh/* ]]; then
+          METHOD="ghstack"
+        elif [[ "$BRANCH" =~ ^pr[0-9]+$ ]]; then
+          METHOD="slpr"
+        else
+          echo "Unable to determine backport method from branch '$BRANCH'. Follow naming gh/* or prNN."
+          exit 1
+        fi
+
+        echo "method=$METHOD" >> "$GITHUB_OUTPUT"
+      if: steps.command.outputs.continue == 'true'
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+    - shell: bash
+      run: |
+        cat > ~/.ghstackrc <<EOF
+        [ghstack]
+        github_url = github.com
+        github_oauth = ${{ inputs.github-token }}
+        github_username = ${{ inputs.ghstack-username }}
+        EOF
+      if: |
+        steps.pull_request.outputs.method == 'ghstack' &&
+        steps.command.outputs.continue == 'true'
+    - shell: bash
+      run: |
+        PR_URL="${{ github.event.issue.pull_request.html_url }}"
         TARGET_BRANCH="${{ steps.command.outputs.params }}"
 
         if [ -z "$TARGET_BRANCH" ]; then
@@ -43,17 +79,36 @@ runs:
           exit 1
         fi
 
+        nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- checkout \
+          "$PR_URL"
+        nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- unlink
+        nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- rebase \
+          --dest "$TARGET_BRANCH"
+        nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- submit
+      if: |
+        steps.pull_request.outputs.method == 'ghstack' &&
+        steps.command.outputs.continue == 'true'
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+    - shell: bash
+      run: |
         PR_URL="${{ github.event.issue.pull_request.html_url }}"
-        PR_TITLE=$(gh pr view "$PR_URL" --json title -q .title)
-        HEAD_REF=$(gh pr view "$PR_URL" --json headRefName -q .headRefName)
+        TARGET_BRANCH="${{ steps.command.outputs.params }}"
 
-        NEW_TITLE="Backport: $PR_TITLE"
+        if [ -z "$TARGET_BRANCH" ]; then
+          echo "Error: backport target branch is required, e.g. '.backport | release-1.0'"
+          exit 1
+        fi
 
-        gh pr create \
-          --base "$TARGET_BRANCH" \
-          --head "$HEAD_REF" \
-          --title "$NEW_TITLE" \
-          --body-file <(gh pr view "$PR_URL" --json body -q .body)
-      if: steps.command.outputs.continue == 'true'
+        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr pull \
+          --goto \
+          "$PR_URL"
+        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr unlink
+        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- rebase \
+          --dest "$TARGET_BRANCH"
+        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr submit
+      if: |
+        steps.pull_request.outputs.method == 'slpr' &&
+        steps.command.outputs.continue == 'true'
       env:
         GH_TOKEN: ${{ inputs.github-token }}
