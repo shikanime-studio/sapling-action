@@ -151,6 +151,15 @@ runs:
         steps.pull_request.outputs.method == 'ghpr' &&
         steps.command.outputs.continue == 'true'
     - shell: bash
+      continue-on-error: true
+      run: |
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- git init \
+          --git-repo . \
+          --colocate
+      if: |
+        steps.pull_request.outputs.method == 'ghpr' &&
+        steps.command.outputs.continue == 'true'
+    - shell: bash
       run: |
         PR_URL="${{ github.event.issue.pull_request.html_url }}"
         TARGET_BRANCH="${{ steps.command.outputs.params }}"
@@ -160,9 +169,6 @@ runs:
           exit 1
         fi
 
-        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- git init \
-          --git-repo . \
-          --colocate || true
         nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- git fetch \
           --remote origin
 

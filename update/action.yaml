@@ -113,13 +113,19 @@ runs:
     - env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
       if: inputs.method == 'ghpr'
+      continue-on-error: true
+      run: |
+        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- git init \
+          --git-repo . \
+          --colocate
+      shell: bash
+    - env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      if: inputs.method == 'ghpr'
       run: |
         BASE="${{ inputs.base }}"
         USERNAME="${{ inputs.username }}"
 
-        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- git init \
-          --git-repo . \
-          --colocate || true
         nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- git fetch \
           --remote origin
 
