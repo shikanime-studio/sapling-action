@@ -140,6 +140,18 @@ runs:
         GH_TOKEN: ${{ inputs.github-token }}
     - shell: bash
       run: |
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+          --repo signing.backend gpg
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+          --repo signing.sign-all true
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+          --repo signing.key "${{ steps.importGPG.outputs.keyid }}"
+      if: |
+        inputs.sign-commits == 'true' &&
+        steps.pull_request.outputs.method == 'ghpr' &&
+        steps.command.outputs.continue == 'true'
+    - shell: bash
+      run: |
         PR_URL="${{ github.event.issue.pull_request.html_url }}"
         TARGET_BRANCH="${{ steps.command.outputs.params }}"
 

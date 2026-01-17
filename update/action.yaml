@@ -76,6 +76,15 @@ runs:
           --local commit.gpgsign true \
           --local gpg.key "${{ steps.importGPG.outputs.keyid }}"
       shell: bash
+    - if: ${{ inputs.sign-commits && inputs.method == 'ghpr' }}
+      run: |
+        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+          --repo signing.backend gpg
+        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+          --repo signing.sign-all true
+        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+          --repo signing.key "${{ steps.importGPG.outputs.keyid }}"
+      shell: bash
     - run: |
         nix run "${{ inputs.flake-url }}#sapling" ${{ inputs.extra-args }} -- ci \
           --message "${{ inputs.commit-message }}"
