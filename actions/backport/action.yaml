@@ -45,7 +45,7 @@ runs:
 
         METHOD=""
 
-        if [[ "$BRANCH" == gh/* ]]; then
+        if [[ "$BRANCH" =~ ^gh/[^/]+/[0-9]+/head$ ]]; then
           METHOD="ghstack"
         elif [[ "$BRANCH" =~ ^pr[0-9]+$ ]]; then
           METHOD="slpr"

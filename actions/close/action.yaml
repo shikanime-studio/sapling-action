@@ -54,19 +54,21 @@ runs:
             slpr)
               METHOD="slpr"
               ;;
+            ghpr)
+              METHOD="ghpr"
+              ;;
             *)
-              echo "Unknown close method param '$PARAMS'. Expected 'ghstack' or 'slpr'."
+              echo "Unknown close method param '$PARAMS'. Expected 'ghstack', 'slpr' or 'ghpr'."
               exit 1
               ;;
           esac
         else
-          if [[ "$BRANCH" == gh/* ]]; then
+          if [[ "$BRANCH" =~ ^gh/[^/]+/[0-9]+/head$ ]]; then
             METHOD="ghstack"
           elif [[ "$BRANCH" =~ ^pr[0-9]+$ ]]; then
             METHOD="slpr"
           else
-            echo "Unable to determine close method from branch '$BRANCH'. Use param 'ghstack' or 'slpr', or follow naming gh/* or prNN."
-            exit 1
+            METHOD="ghpr"
           fi
         fi
 
@@ -101,7 +103,7 @@ runs:
           --delete-branch \
           "${{ github.event.issue.pull_request.html_url }}"
       if: |
-        steps.pull_request.outputs.method == 'slpr' &&
+        (steps.pull_request.outputs.method == 'slpr' || steps.pull_request.outputs.method == 'ghpr') &&
         steps.command.outputs.continue == 'true'
       env:
         GH_TOKEN: ${{ inputs.github-token }}
