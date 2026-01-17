@@ -5,18 +5,22 @@ inputs:
     description: The base branch to rebase onto
     required: false
     default: main
+  email:
+    description: Email for Sapling ui.username
+    required: false
+    default: github-actions[bot]@users.noreply.github.com
   extra-args:
     description: Extra arguments to pass to `nix run`
     required: false
     default: ""
+  fullname:
+    description: Full name for Sapling ui.username
+    required: false
+    default: github-actions[bot]
   github-token:
     description: The GitHub Token
     required: false
     default: ${{ github.token }}
-  ghstack-username:
-    description: Ghstack username
-    required: false
-    default: github-actions
   gpg-passphrase:
     description: GPG private key passphrase
     required: false
@@ -42,9 +46,9 @@ inputs:
     required: false
     default: "false"
   username:
-    description: Sapling username to configure
+    description: Username for ghstack and jj
     required: false
-    default: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+    default: github-actions
 runs:
   using: composite
   steps:
@@ -97,7 +101,7 @@ runs:
     - shell: bash
       run: |
         nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- config \
-          --local ui.username "${{ inputs.username }}"
+          --local ui.username "${{ inputs.fullname }} <${{ inputs.email }}>"
       if: steps.command.outputs.continue == 'true'
     - id: importGPG
       uses: crazy-max/ghaction-import-gpg@v6
@@ -123,7 +127,7 @@ runs:
         [ghstack]
         github_url = github.com
         github_oauth = ${{ inputs.github-token }}
-        github_username = ${{ inputs.ghstack-username }}
+        github_username = ${{ inputs.username }}
         EOF
       if: |
         steps.pull_request.outputs.method == 'ghstack' &&

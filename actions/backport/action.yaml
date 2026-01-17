@@ -9,10 +9,6 @@ inputs:
     description: The GitHub Token
     required: false
     default: ${{ github.token }}
-  ghstack-username:
-    description: Ghstack username
-    required: false
-    default: github-actions
   permissions:
     description: Permissions to require for the command
     required: false
@@ -25,6 +21,10 @@ inputs:
     description: Nix registry to use
     required: false
     default: nixpkgs
+  username:
+    description: Username for ghstack and jj
+    required: false
+    default: github-actions
 runs:
   using: composite
   steps:
@@ -50,8 +50,7 @@ runs:
         elif [[ "$BRANCH" =~ ^pr[0-9]+$ ]]; then
           METHOD="slpr"
         else
-          echo "Unable to determine backport method from branch '$BRANCH'. Follow naming gh/* or prNN."
-          exit 1
+          METHOD="ghpr"
         fi
 
         echo "method=$METHOD" >> "$GITHUB_OUTPUT"
@@ -64,7 +63,7 @@ runs:
         [ghstack]
         github_url = github.com
         github_oauth = ${{ inputs.github-token }}
-        github_username = ${{ inputs.ghstack-username }}
+        github_username = ${{ inputs.username }}
         EOF
       if: |
         steps.pull_request.outputs.method == 'ghstack' &&
@@ -109,6 +108,52 @@ runs:
         nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr submit
       if: |
         steps.pull_request.outputs.method == 'slpr' &&
+        steps.command.outputs.continue == 'true'
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+    - shell: bash
+      run: |
+        PR_URL="${{ github.event.issue.pull_request.html_url }}"
+        TARGET_BRANCH="${{ steps.command.outputs.params }}"
+
+        if [ -z "$TARGET_BRANCH" ]; then
+          echo "Error: backport target branch is required, e.g. '.backport | release-1.0'"
+          exit 1
+        fi
+
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- git init \
+          --git-repo . \
+          --colocate || true
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- git fetch \
+          --remote origin
+
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+          --repo templates.git_push_bookmark \
+          "\"${{ inputs.username }}/push-\" ++ change_id.short()"
+
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- new \
+          "$TARGET_BRANCH@origin"
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- rebase \
+          -b @ \
+          -o "$PR_URL"
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- git push \
+          --change @
+
+        PUSH_BRANCH=$(nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- log \
+          --limit 1 \
+          --template "{{bookmarks}}" \
+          @)
+
+        ORIG_TITLE=$(gh pr view "$PR_URL" --json title -q .title)
+        ORIG_BODY_FILE=<(gh pr view "$PR_URL" --json body -q .body)
+
+        gh pr create \
+          --head "$PUSH_BRANCH" \
+          --base "$TARGET_BRANCH" \
+          --title "$ORIG_TITLE" \
+          --body-file "$ORIG_BODY_FILE"
+      if: |
+        steps.pull_request.outputs.method == 'ghpr' &&
         steps.command.outputs.continue == 'true'
       env:
         GH_TOKEN: ${{ inputs.github-token }}

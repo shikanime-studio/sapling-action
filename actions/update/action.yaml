@@ -13,18 +13,21 @@ inputs:
     description: Commit message
     required: false
     default: Update Flake
+  email:
+    description: Email for Sapling ui.username
+    default: github-actions[bot]@users.noreply.github.com
   extra-args:
     description: Extra arguments to pass to `nix run`
     required: false
     default: ""
+  fullname:
+    description: Full name for Sapling ui.username
+    required: false
+    default: github-actions[bot]
   github-token:
     description: The GitHub Token
     required: false
     default: ${{ github.token }}
-  ghstack-username:
-    description: Sapling ghstack username
-    required: false
-    default: github-actions
   gpg-passphrase:
     description: GPG Private Key Passphrase for the GPG Private Key with which to sign the commits in the PR to be created
     default: ""
@@ -43,8 +46,8 @@ inputs:
     description: Set to true if the action should sign the commit with GPG
     default: false
   username:
-    description: The username to use
-    default: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+    description: Username for ghstack and jj
+    default: github-actions
 runs:
   using: composite
   steps:
@@ -60,7 +63,7 @@ runs:
         nix flake update \
           --accept-flake-config
         nix run "${{ inputs.flake-url }}#sapling" ${{ inputs.extra-args }} -- config \
-          --local ui.username="${{ inputs.username }}"
+          --local ui.username="${{ inputs.fullname }} <${{ inputs.email }}>"
       shell: bash
     - if: ${{ !contains('ghstack,slpr', inputs.method) }}
       run: |
@@ -73,7 +76,7 @@ runs:
         [ghstack]
         github_url = github.com
         github_oauth = ${{ inputs.github-token }}
-        github_username = ${{ inputs.ghstack-username }}
+        github_username = ${{ inputs.username }}
         EOF
       shell: bash
     - if: ${{ inputs.sign-commits }}

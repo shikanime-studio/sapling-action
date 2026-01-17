@@ -9,10 +9,6 @@ inputs:
     description: The GitHub Token
     required: false
     default: ${{ github.token }}
-  ghstack-username:
-    description: Ghstack username
-    required: false
-    default: github-actions
   permissions:
     description: Permissions to require for the command
     required: false
@@ -25,6 +21,10 @@ inputs:
     description: Nix registry to use
     required: false
     default: nixpkgs
+  username:
+    description: Username for ghstack and jj
+    required: false
+    default: github-actions
 runs:
   using: composite
   steps:
@@ -80,7 +80,7 @@ runs:
         [ghstack]
         github_url = github.com
         github_oauth = ${{ inputs.github-token }}
-        github_username = ${{ inputs.ghstack-username }}
+        github_username = ${{ inputs.username }}
         EOF
       if: |
         steps.pull_request.outputs.method == 'ghstack' &&
