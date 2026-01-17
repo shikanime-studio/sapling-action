@@ -1,0 +1,105 @@
+name: close
+description: Close pull request from a PR comment
+inputs:
+  extra-args:
+    description: Extra arguments to pass to `nix run`
+    required: false
+    default: ""
+  github-token:
+    description: The GitHub Token
+    required: false
+    default: ${{ github.token }}
+  permissions:
+    description: Permissions to require for the command
+    required: false
+    default: write,maintain,admin
+  reaction:
+    description: Reaction to add to the triggering comment
+    required: false
+    default: rocket
+  registry:
+    description: Nix registry to use
+    required: false
+    default: nixpkgs
+  username:
+    description: Username
+    required: false
+    default: github-actions
+runs:
+  using: composite
+  steps:
+    - uses: github/command@v1
+      id: command
+      with:
+        command: .close
+        reaction: ${{ inputs.reaction }}
+        allowed_contexts: pull_request
+        permissions: ${{ inputs.permissions }}
+        github_token: ${{ inputs.github-token }}
+        skip_ci: true
+    - id: pull_request
+      shell: bash
+      run: |
+        PR_URL="${{ github.event.issue.pull_request.html_url }}"
+        PARAMS="${{ steps.command.outputs.params }}"
+        BRANCH=$(gh pr view "$PR_URL" --json headRefName -q .headRefName)
+
+        METHOD=""
+
+        if [ -n "$PARAMS" ]; then
+          case "$PARAMS" in
+            ghstack)
+              METHOD="ghstack"
+              ;;
+            slpr)
+              METHOD="slpr"
+              ;;
+            ghpr)
+              METHOD="ghpr"
+              ;;
+            *)
+              echo "Unknown close method param '$PARAMS'. Expected 'ghstack', 'slpr' or 'ghpr'."
+              exit 1
+              ;;
+          esac
+        else
+          if [[ "$BRANCH" =~ ^gh/[^/]+/[0-9]+/head$ ]]; then
+            METHOD="ghstack"
+          elif [[ "$BRANCH" =~ ^pr[0-9]+$ ]]; then
+            METHOD="slpr"
+          else
+            METHOD="ghpr"
+          fi
+        fi
+
+        echo "method=$METHOD" >> "$GITHUB_OUTPUT"
+      if: steps.command.outputs.continue == 'true'
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+    - shell: bash
+      run: |
+        cat > ~/.ghstackrc <<EOF
+        [ghstack]
+        github_url = github.com
+        github_oauth = ${{ inputs.github-token }}
+        github_username = ${{ inputs.username }}
+        EOF
+
+        nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- action \
+          --close \
+          "${{ github.event.issue.pull_request.html_url }}"
+      if: |
+        steps.pull_request.outputs.method == 'ghstack' &&
+        steps.command.outputs.continue == 'true'
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+    - shell: bash
+      run: |
+        gh pr close \
+          --delete-branch \
+          "${{ github.event.issue.pull_request.html_url }}"
+      if: |
+        (steps.pull_request.outputs.method == 'slpr' || steps.pull_request.outputs.method == 'ghpr') &&
+        steps.command.outputs.continue == 'true'
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
