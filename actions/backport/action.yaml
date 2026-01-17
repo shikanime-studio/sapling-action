@@ -81,6 +81,15 @@ runs:
         steps.command.outputs.continue == 'true'
     - shell: bash
       run: |
+        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- config \
+          --local gpg.key "${{ steps.importGPG.outputs.keyid }}" \
+          --local commit.gpgsign true
+      if: |
+        inputs.sign-commits == 'true' &&
+        steps.pull_request.outputs.method == 'slpr' &&
+        steps.command.outputs.continue == 'true'
+    - shell: bash
+      run: |
         PR_URL="${{ github.event.issue.pull_request.html_url }}"
         TARGET_BRANCH="${{ steps.command.outputs.params }}"
 
@@ -121,11 +130,6 @@ runs:
           --goto \
           "$PR_URL"
         nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr unlink
-        if [ "${{ inputs.sign-commits }}" = "true" ]; then
-          nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- config \
-            --local gpg.key "${{ steps.importGPG.outputs.keyid }}" \
-            --local commit.gpgsign true
-        fi
         nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- rebase \
           --dest "$TARGET_BRANCH"
         nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr submit
