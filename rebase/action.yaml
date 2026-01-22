@@ -137,6 +137,8 @@ runs:
 
         nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- checkout \
           "$PR_URL"
+        git fetch origin "${{ inputs.base }}"
+        git rebase "origin/${{ inputs.base }}"
         nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- submit
       if: |
         steps.pull_request.outputs.method == 'ghstack' &&
