@@ -172,3 +172,5 @@ runs:
       if: |
         steps.pull_request.outputs.method == 'ghpr' &&
         steps.command.outputs.continue == 'true'
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
