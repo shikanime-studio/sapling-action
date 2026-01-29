@@ -9,10 +9,6 @@ inputs:
     description: Email
     required: false
     default: github-actions[bot]@users.noreply.github.com
-  extra-args:
-    description: Extra arguments to pass to `nix run`
-    required: false
-    default: ""
   fullname:
     description: Full name
     required: false
@@ -37,10 +33,6 @@ inputs:
     description: Reaction to add to the triggering comment
     required: false
     default: rocket
-  registry:
-    description: Nix registry to use
-    required: false
-    default: nixpkgs
   sign-commits:
     description: Set to true to sign commits with GPG
     required: false
@@ -101,7 +93,7 @@ runs:
         GH_TOKEN: ${{ inputs.github-token }}
     - shell: bash
       run: |
-        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- config \
+        sl config \
           --local ui.username "${{ inputs.fullname }} <${{ inputs.email }}>"
       if: steps.command.outputs.continue == 'true'
     - id: importGPG
@@ -116,7 +108,7 @@ runs:
         steps.command.outputs.continue == 'true'
     - shell: bash
       run: |
-        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- config \
+        sl config \
           --local gpg.key "${{ steps.importGPG.outputs.keyid }}" \
           --local commit.gpgsign true
       if: |
@@ -134,8 +126,7 @@ runs:
         github_username = ${{ inputs.username }}
         EOF
 
-        nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- land \
-          "$PR_URL"
+        ghstack land "$PR_URL"
       if: |
         steps.pull_request.outputs.method == 'ghstack' &&
         steps.command.outputs.continue == 'true'
@@ -145,14 +136,12 @@ runs:
       run: |
         PR_URL="${{ github.event.issue.pull_request.html_url }}"
 
-        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr pull \
-          --goto \
-          "$PR_URL"
-        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- rebase \
+        sl pr pull --goto "$PR_URL"
+        sl rebase \
           --dest ${{ inputs.base }}
-        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- push \
+        sl push \
           --to ${{ inputs.base }}
-        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- push \
+        sl push \
           --delete $(
             gh pr view \
               "$PR_URL" \
