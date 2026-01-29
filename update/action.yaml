@@ -16,10 +16,6 @@ inputs:
   email:
     description: Email
     default: github-actions[bot]@users.noreply.github.com
-  extra-args:
-    description: Extra arguments to pass to `nix run`
-    required: false
-    default: ""
   fullname:
     description: Full name
     required: false
@@ -38,10 +34,6 @@ inputs:
     description: Publication method, one of 'ghstack', 'slpr' or 'ghpr'
     required: false
     default: ghstack
-  registry:
-    description: Nix registry to use
-    required: false
-    default: nixpkgs
   sign-commits:
     description: Set to true if the action should sign the commit with GPG
     default: false
@@ -62,7 +54,7 @@ runs:
     - run: |
         nix flake update \
           --accept-flake-config
-        nix run "${{ inputs.flake-url }}#sapling" ${{ inputs.extra-args }} -- config \
+        sl config \
           --local ui.username="${{ inputs.fullname }} <${{ inputs.email }}>"
       shell: bash
     - if: ${{ !contains('ghstack,slpr,ghpr', inputs.method) }}
@@ -72,21 +64,18 @@ runs:
       shell: bash
     - if: ${{ inputs.sign-commits && inputs.method == 'slpr' }}
       run: |
-        nix run "${{ inputs.flake-url }}#sapling" ${{ inputs.extra-args }} -- config \
+        sl config \
           --local commit.gpgsign true \
           --local gpg.key "${{ steps.importGPG.outputs.keyid }}"
       shell: bash
     - if: ${{ inputs.sign-commits && inputs.method == 'ghpr' }}
       run: |
-        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- config set \
-          --repo signing.backend gpg
-        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- config set \
-          --repo signing.sign-all true
-        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- config set \
-          --repo signing.key "${{ steps.importGPG.outputs.keyid }}"
+        jj config set --repo signing.backend gpg
+        jj config set --repo signing.sign-all true
+        jj config set --repo signing.key "${{ steps.importGPG.outputs.keyid }}"
       shell: bash
     - run: |
-        nix run "${{ inputs.flake-url }}#sapling" ${{ inputs.extra-args }} -- ci \
+        sl ci \
           --message "${{ inputs.commit-message }}"
       shell: bash
     - env:
@@ -100,24 +89,18 @@ runs:
         github_username = ${{ inputs.username }}
         EOF
 
-        nix run "${{ inputs.flake-url }}#ghstack" ${{ inputs.extra-args }} -- \
-          submit
+        ghstack submit
       shell: bash
     - env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
       if: inputs.method == 'slpr'
-      run: |
-        nix run "${{ inputs.flake-url }}#sapling" ${{ inputs.extra-args }} -- pr \
-          submit
+      run: sl pr submit
       shell: bash
     - env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
       if: inputs.method == 'ghpr'
       continue-on-error: true
-      run: |
-        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- git init \
-          --git-repo . \
-          --colocate
+      run: jj git init --git-repo . --colocate
       shell: bash
     - env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
@@ -126,20 +109,15 @@ runs:
         BASE="${{ inputs.base }}"
         USERNAME="${{ inputs.username }}"
 
-        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- git fetch \
-          --remote origin
+        jj git fetch --remote origin
 
-        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+        jj config set \
           --repo templates.git_push_bookmark \
           "\"${USERNAME}/push-\" ++ change_id.short()"
 
-        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- git push \
-          --change @
+        jj git push --change @
 
-        PUSH_BRANCH=$(nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- log \
-          --limit 1 \
-          --template "{{bookmarks}}" \
-          @)
+        PUSH_BRANCH=$(jj log --limit 1 --template "{{bookmarks}}" @)
 
         EXISTING=$(gh pr list \
           --head "$PUSH_BRANCH" \
