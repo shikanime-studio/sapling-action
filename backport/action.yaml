@@ -1,6 +1,10 @@
 name: backport
 description: Backport pull request from a PR comment
 inputs:
+  extra-args:
+    description: Extra arguments to pass to `nix run`
+    required: false
+    default: ""
   github-token:
     description: The GitHub Token
     required: false
@@ -21,6 +25,10 @@ inputs:
     description: Reaction to add to the triggering comment
     required: false
     default: rocket
+  registry:
+    description: Nix registry to use
+    required: false
+    default: nixpkgs
   sign-commits:
     description: Set to true to sign commits with GPG
     required: false
@@ -73,7 +81,7 @@ runs:
         steps.command.outputs.continue == 'true'
     - shell: bash
       run: |
-        sl config \
+        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- config \
           --local gpg.key "${{ steps.importGPG.outputs.keyid }}" \
           --local commit.gpgsign true
       if: |
@@ -97,10 +105,12 @@ runs:
         github_username = ${{ inputs.username }}
         EOF
 
-        ghstack checkout "$PR_URL"
-        ghstack unlink
-        ghstack rebase --dest "$TARGET_BRANCH"
-        ghstack submit
+        nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- checkout \
+          "$PR_URL"
+        nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- unlink
+        nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- rebase \
+          --dest "$TARGET_BRANCH"
+        nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- submit
       if: |
         steps.pull_request.outputs.method == 'ghstack' &&
         steps.command.outputs.continue == 'true'
@@ -116,10 +126,13 @@ runs:
           exit 1
         fi
 
-        sl pr pull --goto "$PR_URL"
-        sl pr unlink
-        sl rebase --dest "$TARGET_BRANCH"
-        sl pr submit
+        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr pull \
+          --goto \
+          "$PR_URL"
+        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr unlink
+        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- rebase \
+          --dest "$TARGET_BRANCH"
+        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr submit
       if: |
         steps.pull_request.outputs.method == 'slpr' &&
         steps.command.outputs.continue == 'true'
@@ -127,16 +140,22 @@ runs:
         GH_TOKEN: ${{ inputs.github-token }}
     - shell: bash
       run: |
-        jj config set --repo signing.backend gpg
-        jj config set --repo signing.sign-all true
-        jj config set --repo signing.key "${{ steps.importGPG.outputs.keyid }}"
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+          --repo signing.backend gpg
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+          --repo signing.sign-all true
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+          --repo signing.key "${{ steps.importGPG.outputs.keyid }}"
       if: |
         inputs.sign-commits == 'true' &&
         steps.pull_request.outputs.method == 'ghpr' &&
         steps.command.outputs.continue == 'true'
     - shell: bash
       continue-on-error: true
-      run: jj git init --git-repo . --colocate
+      run: |
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- git init \
+          --git-repo . \
+          --colocate
       if: |
         steps.pull_request.outputs.method == 'ghpr' &&
         steps.command.outputs.continue == 'true'
@@ -150,17 +169,25 @@ runs:
           exit 1
         fi
 
-        jj git fetch --remote origin
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- git fetch \
+          --remote origin
 
-        jj config set --repo templates.git_push_bookmark \
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+          --repo templates.git_push_bookmark \
           "\"${{ inputs.username }}/push-\" ++ change_id.short()"
 
-        jj new "$TARGET_BRANCH@origin"
-        jj rebase --branch @ --into "$PR_URL"
-        jj git push \
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- new \
+          "$TARGET_BRANCH@origin"
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- rebase \
+          -b @ \
+          -o "$PR_URL"
+        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- git push \
           --change @
 
-        PUSH_BRANCH=$(jj log --limit 1 --template "{{bookmarks}}" @)
+        PUSH_BRANCH=$(nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- log \
+          --limit 1 \
+          --template "{{bookmarks}}" \
+          @)
 
         ORIG_TITLE=$(gh pr view "$PR_URL" --json title -q .title)
         ORIG_BODY_FILE=<(gh pr view "$PR_URL" --json body -q .body)

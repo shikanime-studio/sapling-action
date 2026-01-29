@@ -1,6 +1,10 @@
 name: close
 description: Close pull request from a PR comment
 inputs:
+  extra-args:
+    description: Extra arguments to pass to `nix run`
+    required: false
+    default: ""
   github-token:
     description: The GitHub Token
     required: false
@@ -13,6 +17,10 @@ inputs:
     description: Reaction to add to the triggering comment
     required: false
     default: rocket
+  registry:
+    description: Nix registry to use
+    required: false
+    default: nixpkgs
   username:
     description: Username
     required: false
@@ -77,7 +85,7 @@ runs:
         github_username = ${{ inputs.username }}
         EOF
 
-        ghstack action \
+        nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- action \
           --close \
           "${{ github.event.issue.pull_request.html_url }}"
       if: |
