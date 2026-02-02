@@ -1,0 +1,23 @@
+name: cleanup
+description: Cleanup branches after Pull Request is closed
+inputs:
+  head:
+    description: The head branch to delete
+    required: false
+    default: ${{ github.head_ref }}
+runs:
+  using: composite
+  steps:
+    - env:
+        HEAD_REF: ${{ inputs.head }}
+      if: ${{ !(startsWith(inputs.head, 'gh/') && endsWith(inputs.head, '/head')) }}
+      run: git push origin --delete "$HEAD_REF" || true
+      shell: bash
+    - env:
+        HEAD_REF: ${{ inputs.head }}
+      if: ${{ startsWith(inputs.head, 'gh/') && endsWith(inputs.head, '/head') }}
+      run: |
+        for role in base head orig; do
+          git push origin --delete "${HEAD_REF%/head}/$role" || true
+        done
+      shell: bash
