@@ -15,6 +15,7 @@ App token, configure repository permissions accordingly:
 - Close: pull-requests: write, contents: write, issues: write
 - Backport: contents: write, pull-requests: write, issues: write
 - Update: contents: write, pull-requests: write, issues: write
+- Cleanup: contents: write
 
 Permissions can be configured at the workflow level or per job. The examples
 below set them at the workflow level and request matching scopes from the
@@ -200,137 +201,29 @@ jobs:
           repo-token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
 ```
 
-These examples configure the actions to run whenever a comment is added to a
-pull request and schedule weekly dependency updates.
+To automatically delete branches after a pull request is merged or closed, add a
+cleanup workflow to `.github/workflows/cleanup.yaml`:
 
-## Usage
-
-### Land
-
-To land a pull request, comment on the PR with:
-
-```
-.land | ghstack
-```
-
-For a Sapling PR or a native GitHub PR:
-
-```
-.land | slpr
-.land | ghpr
-```
-
-If you omit the method, it will be auto-detected based on the branch name:
-`ghstack` for `gh/*/*/head`, `slpr` for `pr<id>`, otherwise `ghpr`.
-
-### Rebase
-
-To rebase and update your pull request on top of the latest changes from the
-main branch, comment:
-
-```
-.rebase
-```
-
-### Close
-
-To close a pull request with a comment command, use:
-
-```
-.close
-```
-
-You can optionally specify a method (for example `ghstack`, `slpr`, or `ghpr`)
-as a parameter:
-
-```
-.close | ghstack
-```
-
-### Backport
-
-To create a backport pull request targeting another branch, comment:
-
-```
-.backport | release-1.0
-```
-
-## Repository Rules Configuration
-
-To support a secure and efficient workflow, we recommend configuring GitHub
-repository rules for branch protection and pull request review requirements:
-
-### Main Branch Protection
-
-Configure the main branch with:
-
-- Linear commit history to keep history easy to follow
-- Required signed commits for verification
-- Rules applied specifically to `refs/heads/main`
-
-Example:
-
-```terraform
-resource "github_repository_ruleset" "main" {
-  name        = "Main branch protections"
-  target      = "branch"
-  enforcement = "active"
-
-  conditions {
-    ref_name {
-      include = ["refs/heads/main"]
-    }
-  }
-
-  rules {
-    required_linear_history = true
-    required_signatures     = true
-  }
-}
-```
-
-### Pull Request Requirements
-
-Configure pull request requirements to:
-
-- Require resolution of all review threads before merging
-- Require all status checks to pass
-
-This setup lets the ghstack app bypass restrictions for stack landing operations
-while keeping standard PR merge behavior for developers. It enforces a workflow
-where changes reach `main` through pull requests.
-
-Example:
-
-```terraform
-resource "github_repository_ruleset" "landing" {
-  name        = "Landing protections"
-  target      = "branch"
-  enforcement = "active"
-
-  conditions {
-    ref_name {
-      include = ["refs/heads/main"]
-    }
-  }
-
-  bypass_actors {
-    actor_id    = "<app-id>"
-    actor_type  = "Integration"
-    bypass_mode = "always"
-  }
-
-  rules {
-    pull_request {
-      required_review_thread_resolution = true
-    }
-    required_status_checks {
-      required_check {
-        context        = "check"
-        integration_id = 15368 # GitHub Actions
-      }
-      strict_required_status_checks_policy = true
-    }
-  }
-}
+```yaml
+name: Cleanup
+'on':
+  pull_request:
+    types:
+      - closed
+jobs:
+  cleanup:
+    runs-on: ubuntu-slim
+    steps:
+      - continue-on-error: true
+        id: createGithubAppToken
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.OPERATOR_APP_ID }}
+          permission-contents: write
+          private-key: ${{ secrets.OPERATOR_PRIVATE_KEY }}
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+      - uses: shikanime-studio/actions/cleanup@v7
 ```
