@@ -45,8 +45,8 @@ runs:
       uses: shikanime-studio/actions/stack@main
       if: steps.command.outputs.continue == 'true'
       with:
-        pull-request-url: ${{ inputs.pull-request-url }}
         github-token: ${{ inputs.github-token }}
+        pull-request-url: ${{ inputs.pull-request-url }}
     - id: pull_request
       shell: bash
       env:

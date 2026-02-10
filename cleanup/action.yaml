@@ -18,8 +18,8 @@ runs:
     - id: stack
       uses: shikanime-studio/actions/stack@main
       with:
-        pull-request-url: ${{ inputs.pull-request-url }}
         github-token: ${{ inputs.github-token }}
+        pull-request-url: ${{ inputs.pull-request-url }}
     - if: ${{ steps.stack.outputs.method == 'github-pull-request' }}
       env:
         HEAD_REF: ${{ inputs.head-ref }}
