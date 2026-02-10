@@ -157,8 +157,7 @@ runs:
         steps.command.outputs.continue == 'true'
     - shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github-token }}
-        REGISTRY: ${{ inputs.registry }}
+        BASE: ${{ inputs.base }}
         EXTRA_ARGS: ${{ inputs.extra-args }}
         GH_TOKEN: ${{ inputs.github-token }}
         PR_URL: ${{ inputs.pull-request-url }}

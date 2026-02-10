@@ -109,7 +109,7 @@ runs:
         EXTRA_ARGS: ${{ inputs.extra-args }}
         REGISTRY: ${{ inputs.registry }}
     - env:
-        GITHUB_TOKEN: ${{ inputs.github-token }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
         GH_TOKEN: ${{ inputs.github-token }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
         REGISTRY: ${{ inputs.registry }}
@@ -129,6 +129,7 @@ runs:
           submit
       shell: bash
     - env:
+        EXTRA_ARGS: ${{ inputs.extra-args }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
         REGISTRY: ${{ inputs.registry }}
       if: inputs.method == 'sapling-pull-request'
@@ -137,6 +138,7 @@ runs:
           submit
       shell: bash
     - env:
+        EXTRA_ARGS: ${{ inputs.extra-args }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
         REGISTRY: ${{ inputs.registry }}
       if: inputs.method == 'github-pull-request'
@@ -147,7 +149,6 @@ runs:
           --colocate
       shell: bash
     - env:
-        GITHUB_TOKEN: ${{ inputs.github-token }}
         BASE: ${{ inputs.base }}
         COMMIT_MESSAGE: ${{ inputs.commit-message }}
         EXTRA_ARGS: ${{ inputs.extra-args }}

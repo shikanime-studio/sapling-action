@@ -73,11 +73,7 @@ runs:
             fi
           fi
         fi
-    - id: continue
-      shell: bash
-      env:
-        PARENT_PR: ${{ steps.stack.outputs.parent-pull-request-url }}
-      run: |
+
         CONTINUE="true"
 
         if [[ -n "$PARENT_PR" ]]; then
