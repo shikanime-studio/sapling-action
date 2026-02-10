@@ -53,7 +53,7 @@ runs:
         permissions: ${{ inputs.permissions }}
         github_token: ${{ inputs.github-token }}
         skip_ci: true
-    - id: info
+    - id: stack
       uses: shikanime-studio/actions/stack@main
       if: steps.command.outputs.continue == 'true'
       with:
@@ -71,25 +71,25 @@ runs:
         steps.command.outputs.continue == 'true'
     - shell: bash
       env:
-        REGISTRY: ${{ inputs.registry }}
         EXTRA_ARGS: ${{ inputs.extra-args }}
         GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
+        REGISTRY: ${{ inputs.registry }}
       run: |
         nix run "$REGISTRY#sapling" $EXTRA_ARGS -- config \
           --local gpg.key "$GPG_KEY_ID" \
           --local commit.gpgsign true
       if: |
         inputs.sign-commits == 'true' &&
-        steps.info.outputs.method == 'sapling-pull-request' &&
+        steps.stack.outputs.method == 'sapling-pull-request' &&
         steps.command.outputs.continue == 'true'
     - shell: bash
       env:
-        TARGET_BRANCH: ${{ steps.command.outputs.params }}
-        GH_TOKEN: ${{ inputs.github-token }}
-        USERNAME: ${{ inputs.username }}
-        REGISTRY: ${{ inputs.registry }}
         EXTRA_ARGS: ${{ inputs.extra-args }}
+        GH_TOKEN: ${{ inputs.github-token }}
         PR_URL: ${{ inputs.pull-request-url }}
+        REGISTRY: ${{ inputs.registry }}
+        TARGET_BRANCH: ${{ steps.command.outputs.params }}
+        USERNAME: ${{ inputs.username }}
       run: |
         if [ -z "$TARGET_BRANCH" ]; then
           echo "Error: backport target branch is required, e.g. '.backport | release-1.0'"
@@ -112,15 +112,15 @@ runs:
           --dest "$TARGET_BRANCH"
         nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- submit
       if: |
-        steps.info.outputs.method == 'ghstack' &&
+        steps.stack.outputs.method == 'ghstack' &&
         steps.command.outputs.continue == 'true'
     - shell: bash
       env:
-        TARGET_BRANCH: ${{ steps.command.outputs.params }}
-        GH_TOKEN: ${{ inputs.github-token }}
-        REGISTRY: ${{ inputs.registry }}
         EXTRA_ARGS: ${{ inputs.extra-args }}
+        GH_TOKEN: ${{ inputs.github-token }}
         PR_URL: ${{ inputs.pull-request-url }}
+        REGISTRY: ${{ inputs.registry }}
+        TARGET_BRANCH: ${{ steps.command.outputs.params }}
       run: |
         if [ -z "$TARGET_BRANCH" ]; then
           echo "Error: backport target branch is required, e.g. '.backport | release-1.0'"
@@ -135,13 +135,13 @@ runs:
           --dest "$TARGET_BRANCH"
         nix run "$REGISTRY#sapling" $EXTRA_ARGS -- pr submit
       if: |
-        steps.info.outputs.method == 'sapling-pull-request' &&
+        steps.stack.outputs.method == 'sapling-pull-request' &&
         steps.command.outputs.continue == 'true'
     - shell: bash
       env:
-        REGISTRY: ${{ inputs.registry }}
         EXTRA_ARGS: ${{ inputs.extra-args }}
         GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
+        REGISTRY: ${{ inputs.registry }}
       run: |
         nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- config set \
           --repo signing.backend gpg
@@ -151,27 +151,27 @@ runs:
           --repo signing.key "$GPG_KEY_ID"
       if: |
         inputs.sign-commits == 'true' &&
-        steps.info.outputs.method == 'github-pull-request' &&
+        steps.stack.outputs.method == 'github-pull-request' &&
         steps.command.outputs.continue == 'true'
     - shell: bash
       continue-on-error: true
       env:
-        REGISTRY: ${{ inputs.registry }}
         EXTRA_ARGS: ${{ inputs.extra-args }}
+        REGISTRY: ${{ inputs.registry }}
       run: |
         nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- git init \
           --git-repo . \
           --colocate
       if: |
-        steps.info.outputs.method == 'github-pull-request' &&
+        steps.stack.outputs.method == 'github-pull-request' &&
         steps.command.outputs.continue == 'true'
     - shell: bash
       env:
+        EXTRA_ARGS: ${{ inputs.extra-args }}
         GH_TOKEN: ${{ inputs.github-token }}
         PR_URL: ${{ inputs.pull-request-url }}
-        TARGET_BRANCH: ${{ steps.command.outputs.params }}
         REGISTRY: ${{ inputs.registry }}
-        EXTRA_ARGS: ${{ inputs.extra-args }}
+        TARGET_BRANCH: ${{ steps.command.outputs.params }}
         USERNAME: ${{ inputs.username }}
       run: |
         if [ -z "$TARGET_BRANCH" ]; then
@@ -208,5 +208,5 @@ runs:
           --title "$ORIG_TITLE" \
           --body-file "$ORIG_BODY_FILE"
       if: |
-        steps.info.outputs.method == 'github-pull-request' &&
+        steps.stack.outputs.method == 'github-pull-request' &&
         steps.command.outputs.continue == 'true'

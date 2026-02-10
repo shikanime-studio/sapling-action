@@ -41,7 +41,7 @@ runs:
         permissions: ${{ inputs.permissions }}
         github_token: ${{ inputs.github-token }}
         skip_ci: true
-    - id: info
+    - id: stack
       uses: shikanime-studio/actions/stack@main
       if: steps.command.outputs.continue == 'true'
       with:
@@ -51,8 +51,8 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
+        INFO_METHOD: ${{ steps.stack.outputs.method }}
         PARAMS: ${{ steps.command.outputs.params }}
-        INFO_METHOD: ${{ steps.info.outputs.method }}
       run: |
         METHOD=""
 
@@ -80,11 +80,11 @@ runs:
       if: steps.command.outputs.continue == 'true'
     - shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github-token }}
-        REGISTRY: ${{ inputs.registry }}
         EXTRA_ARGS: ${{ inputs.extra-args }}
-        USERNAME: ${{ inputs.username }}
+        GH_TOKEN: ${{ inputs.github-token }}
         PR_URL: ${{ inputs.pull-request-url }}
+        REGISTRY: ${{ inputs.registry }}
+        USERNAME: ${{ inputs.username }}
       run: |
         GHSTACKRC_PATH=$(mktemp)
         trap 'rm -f "$GHSTACKRC_PATH"' EXIT

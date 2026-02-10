@@ -15,17 +15,17 @@ inputs:
 runs:
   using: composite
   steps:
-    - id: info
+    - id: stack
       uses: shikanime-studio/actions/stack@main
       with:
         pull-request-url: ${{ inputs.pull-request-url }}
         github-token: ${{ inputs.github-token }}
-    - if: ${{ steps.info.outputs.method == 'github-pull-request' }}
+    - if: ${{ steps.stack.outputs.method == 'github-pull-request' }}
       env:
         HEAD_REF: ${{ inputs.head-ref }}
       run: git push origin --delete "$HEAD_REF" || true
       shell: bash
-    - if: ${{ steps.info.outputs.method == 'ghstack' }}
+    - if: ${{ steps.stack.outputs.method == 'ghstack' }}
       env:
         HEAD_REF: ${{ inputs.head-ref }}
       run: |

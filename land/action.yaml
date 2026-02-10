@@ -64,7 +64,7 @@ runs:
         allowed_contexts: pull_request
         permissions: ${{ inputs.permissions }}
         github_token: ${{ inputs.github-token }}
-    - id: info
+    - id: stack
       uses: shikanime-studio/actions/stack@main
       if: steps.command.outputs.continue == 'true'
       with:
@@ -74,7 +74,7 @@ runs:
       shell: bash
       env:
         PARAMS: ${{ steps.command.outputs.params }}
-        INFO_METHOD: ${{ steps.info.outputs.method }}
+        INFO_METHOD: ${{ steps.stack.outputs.method }}
       run: |
         METHOD=""
 

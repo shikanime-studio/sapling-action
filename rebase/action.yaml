@@ -65,7 +65,7 @@ runs:
         permissions: ${{ inputs.permissions }}
         github_token: ${{ inputs.github-token }}
         skip_ci: true
-    - id: info
+    - id: stack
       uses: shikanime-studio/actions/stack@main
       if: steps.command.outputs.continue == 'true'
       with:
@@ -76,7 +76,7 @@ runs:
       env:
         PARAMS: ${{ steps.command.outputs.params }}
         GH_TOKEN: ${{ inputs.github-token }}
-        INFO_METHOD: ${{ steps.info.outputs.method }}
+        INFO_METHOD: ${{ steps.stack.outputs.method }}
       run: |
         METHOD=""
 

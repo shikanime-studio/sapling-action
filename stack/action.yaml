@@ -12,23 +12,23 @@ inputs:
 outputs:
   base-ref:
     description: The base ref name of the pull request
-    value: ${{ steps.info.outputs.base-ref }}
+    value: ${{ steps.stack.outputs.base-ref }}
   continue:
     description: Whether to continue the workflow based on parent PR status
-    value: ${{ steps.info.outputs.continue }}
+    value: ${{ steps.stack.outputs.continue }}
   head-ref:
     description: The head ref name of the pull request
-    value: ${{ steps.info.outputs.head-ref }}
+    value: ${{ steps.stack.outputs.head-ref }}
   method:
     description: The method used to create the pull request (ghstack, sapling-pull-request, github-pull-request)
-    value: ${{ steps.info.outputs.method }}
+    value: ${{ steps.stack.outputs.method }}
   parent-pull-request-url:
     description: The parent pull request URL if part of a stack
-    value: ${{ steps.info.outputs.parent-pull-request-url }}
+    value: ${{ steps.stack.outputs.parent-pull-request-url }}
 runs:
   using: composite
   steps:
-    - id: info
+    - id: stack
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
