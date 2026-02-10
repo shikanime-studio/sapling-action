@@ -66,10 +66,10 @@ runs:
           --local ui.username "$FULLNAME <$EMAIL>"
       shell: bash
       env:
-        REGISTRY: ${{ inputs.registry }}
+        EMAIL: ${{ inputs.email }}
         EXTRA_ARGS: ${{ inputs.extra-args }}
         FULLNAME: ${{ inputs.fullname }}
-        EMAIL: ${{ inputs.email }}
+        REGISTRY: ${{ inputs.registry }}
     - if: ${{ !contains('ghstack,sapling-pull-request,github-pull-request', inputs.method) }}
       run: |
         echo "Unknown update method '$METHOD'. Expected 'ghstack', 'sapling-pull-request' or 'github-pull-request'."
@@ -84,9 +84,9 @@ runs:
           --local gpg.key "$GPG_KEY_ID"
       shell: bash
       env:
-        REGISTRY: ${{ inputs.registry }}
         EXTRA_ARGS: ${{ inputs.extra-args }}
         GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
+        REGISTRY: ${{ inputs.registry }}
     - if: ${{ inputs.sign-commits && inputs.method == 'github-pull-request' }}
       run: |
         nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- config set \
@@ -97,23 +97,23 @@ runs:
           --repo signing.key "$GPG_KEY_ID"
       shell: bash
       env:
-        REGISTRY: ${{ inputs.registry }}
         EXTRA_ARGS: ${{ inputs.extra-args }}
         GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
+        REGISTRY: ${{ inputs.registry }}
     - run: |
         nix run "$REGISTRY#sapling" $EXTRA_ARGS -- ci \
           --message "$COMMIT_MESSAGE"
       shell: bash
       env:
-        REGISTRY: ${{ inputs.registry }}
-        EXTRA_ARGS: ${{ inputs.extra-args }}
         COMMIT_MESSAGE: ${{ inputs.commit-message }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        REGISTRY: ${{ inputs.registry }}
     - env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         GH_TOKEN: ${{ inputs.github-token }}
-        USERNAME: ${{ inputs.username }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
         REGISTRY: ${{ inputs.registry }}
-        EXTRA_ARGS: ${{ inputs.extra-args }}
+        USERNAME: ${{ inputs.username }}
       if: inputs.method == 'ghstack'
       run: |
         GHSTACKRC_PATH=$(mktemp)
@@ -131,7 +131,6 @@ runs:
     - env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         REGISTRY: ${{ inputs.registry }}
-        EXTRA_ARGS: ${{ inputs.extra-args }}
       if: inputs.method == 'sapling-pull-request'
       run: |
         nix run "$REGISTRY#sapling" $EXTRA_ARGS -- pr \
@@ -140,7 +139,6 @@ runs:
     - env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         REGISTRY: ${{ inputs.registry }}
-        EXTRA_ARGS: ${{ inputs.extra-args }}
       if: inputs.method == 'github-pull-request'
       continue-on-error: true
       run: |
@@ -151,10 +149,11 @@ runs:
     - env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         BASE: ${{ inputs.base }}
-        REGISTRY: ${{ inputs.registry }}
-        EXTRA_ARGS: ${{ inputs.extra-args }}
-        USERNAME: ${{ inputs.username }}
         COMMIT_MESSAGE: ${{ inputs.commit-message }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        REGISTRY: ${{ inputs.registry }}
+        USERNAME: ${{ inputs.username }}
       if: inputs.method == 'github-pull-request'
       run: |
         nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- git fetch \

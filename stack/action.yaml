@@ -28,20 +28,23 @@ outputs:
 runs:
   using: composite
   steps:
-    - id: stack
+    - id: pull_request
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
         PR_URL: ${{ inputs.pull-request-url }}
       run: |
         JSON=$(gh pr view "$PR_URL" --json headRefName,baseRefName,body)
-        BRANCH=$(echo "$JSON" | jq -r .headRefName)
-        BASE=$(echo "$JSON" | jq -r .baseRefName)
-        BODY=$(echo "$JSON" | jq -r .body)
-
-        echo "head-ref=$BRANCH" >> "$GITHUB_OUTPUT"
-        echo "base-ref=$BASE" >> "$GITHUB_OUTPUT"
-
+        echo "head-ref=$(echo "$JSON" | jq -r .headRefName)" >> "$GITHUB_OUTPUT"
+        echo "base-ref=$(echo "$JSON" | jq -r .baseRefName)" >> "$GITHUB_OUTPUT"
+        echo "body=$(echo "$JSON" | jq -r .body)" >> "$GITHUB_OUTPUT"
+    - id: stack
+      shell: bash
+      env:
+        BRANCH: ${{ steps.pull_request.outputs.head-ref }}
+        BASE: ${{ steps.pull_request.outputs.base-ref }}
+        BODY: ${{ steps.pull_request.outputs.body }}
+      run: |
         METHOD=""
 
         if [[ "$BRANCH" =~ ^gh/[^/]+/[0-9]+/head$ ]]; then
@@ -70,7 +73,11 @@ runs:
             fi
           fi
         fi
-
+    - id: continue
+      shell: bash
+      env:
+        PARENT_PR: ${{ steps.stack.outputs.parent-pull-request-url }}
+      run: |
         CONTINUE="true"
 
         if [[ -n "$PARENT_PR" ]]; then
