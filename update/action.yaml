@@ -35,7 +35,7 @@ inputs:
     description: GPG Private Key with which to sign the commits in the PR to be created
     default: ""
   method:
-    description: Publication method, one of 'ghstack', 'slpr' or 'ghpr'
+    description: Publication method, one of 'ghstack', 'sapling-pull-request' or 'github-pull-request'
     required: false
     default: ghstack
   registry:
@@ -62,81 +62,112 @@ runs:
     - run: |
         nix flake update \
           --accept-flake-config
-        nix run "${{ inputs.flake-url }}#sapling" ${{ inputs.extra-args }} -- config \
-          --local ui.username="${{ inputs.fullname }} <${{ inputs.email }}>"
+        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- config \
+          --local ui.username "$FULLNAME <$EMAIL>"
       shell: bash
-    - if: ${{ !contains('ghstack,slpr,ghpr', inputs.method) }}
+      env:
+        EMAIL: ${{ inputs.email }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        FULLNAME: ${{ inputs.fullname }}
+        REGISTRY: ${{ inputs.registry }}
+    - if: ${{ !contains('ghstack,sapling-pull-request,github-pull-request', inputs.method) }}
       run: |
-        echo "Unknown update method '${{ inputs.method }}'. Expected 'ghstack', 'slpr' or 'ghpr'."
+        echo "Unknown update method '$METHOD'. Expected 'ghstack', 'sapling-pull-request' or 'github-pull-request'."
         exit 1
       shell: bash
-    - if: ${{ inputs.sign-commits && inputs.method == 'slpr' }}
+      env:
+        METHOD: ${{ inputs.method }}
+    - if: ${{ inputs.sign-commits && inputs.method == 'sapling-pull-request' }}
       run: |
-        nix run "${{ inputs.flake-url }}#sapling" ${{ inputs.extra-args }} -- config \
+        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- config \
           --local commit.gpgsign true \
-          --local gpg.key "${{ steps.importGPG.outputs.keyid }}"
+          --local gpg.key "$GPG_KEY_ID"
       shell: bash
-    - if: ${{ inputs.sign-commits && inputs.method == 'ghpr' }}
+      env:
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
+        REGISTRY: ${{ inputs.registry }}
+    - if: ${{ inputs.sign-commits && inputs.method == 'github-pull-request' }}
       run: |
-        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- config set \
           --repo signing.backend gpg
-        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- config set \
           --repo signing.sign-all true
-        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- config set \
-          --repo signing.key "${{ steps.importGPG.outputs.keyid }}"
+        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- config set \
+          --repo signing.key "$GPG_KEY_ID"
       shell: bash
+      env:
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
+        REGISTRY: ${{ inputs.registry }}
     - run: |
-        nix run "${{ inputs.flake-url }}#sapling" ${{ inputs.extra-args }} -- ci \
-          --message "${{ inputs.commit-message }}"
+        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- ci \
+          --message "$COMMIT_MESSAGE"
       shell: bash
+      env:
+        COMMIT_MESSAGE: ${{ inputs.commit-message }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        REGISTRY: ${{ inputs.registry }}
     - env:
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        GH_TOKEN: ${{ inputs.github-token }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
+        REGISTRY: ${{ inputs.registry }}
+        USERNAME: ${{ inputs.username }}
       if: inputs.method == 'ghstack'
       run: |
-        cat > ~/.ghstackrc <<EOF
+        GHSTACKRC_PATH=$(mktemp)
+        trap 'rm -f "$GHSTACKRC_PATH"' EXIT
+        cat > "$GHSTACKRC_PATH" <<EOF
         [ghstack]
         github_url = github.com
-        github_oauth = ${{ inputs.github-token }}
-        github_username = ${{ inputs.username }}
+        github_oauth = $GH_TOKEN
+        github_username = $USERNAME
         EOF
 
-        nix run "${{ inputs.flake-url }}#ghstack" ${{ inputs.extra-args }} -- \
+        nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- \
           submit
       shell: bash
     - env:
+        EXTRA_ARGS: ${{ inputs.extra-args }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
-      if: inputs.method == 'slpr'
+        REGISTRY: ${{ inputs.registry }}
+      if: inputs.method == 'sapling-pull-request'
       run: |
-        nix run "${{ inputs.flake-url }}#sapling" ${{ inputs.extra-args }} -- pr \
+        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- pr \
           submit
       shell: bash
     - env:
+        EXTRA_ARGS: ${{ inputs.extra-args }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
-      if: inputs.method == 'ghpr'
+        REGISTRY: ${{ inputs.registry }}
+      if: inputs.method == 'github-pull-request'
       continue-on-error: true
       run: |
-        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- git init \
+        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- git init \
           --git-repo . \
           --colocate
       shell: bash
     - env:
+        BASE: ${{ inputs.base }}
+        COMMIT_MESSAGE: ${{ inputs.commit-message }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
-      if: inputs.method == 'ghpr'
+        REGISTRY: ${{ inputs.registry }}
+        USERNAME: ${{ inputs.username }}
+      if: inputs.method == 'github-pull-request'
       run: |
-        BASE="${{ inputs.base }}"
-        USERNAME="${{ inputs.username }}"
-
-        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- git fetch \
+        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- git fetch \
           --remote origin
 
-        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- config set \
           --repo templates.git_push_bookmark \
-          "\"${USERNAME}/push-\" ++ change_id.short()"
+          "\"$USERNAME/push-\" ++ change_id.short()"
 
-        nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- git push \
+        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- git push \
           --change @
 
-        PUSH_BRANCH=$(nix run "${{ inputs.flake-url }}#jujutsu" ${{ inputs.extra-args }} -- log \
+        PUSH_BRANCH=$(nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- log \
           --limit 1 \
           --template "{{bookmarks}}" \
           @)
@@ -152,7 +183,7 @@ runs:
           gh pr create \
             --head "$PUSH_BRANCH" \
             --base "$BASE" \
-            --title "${{ inputs.commit-message }}" \
+            --title "$COMMIT_MESSAGE" \
             --body "Automated flake update."
         else
           echo "Existing open PR #$EXISTING for $PUSH_BRANCH -> $BASE, not creating a new one."

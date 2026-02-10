@@ -33,6 +33,10 @@ inputs:
     description: Permissions to require for the command
     required: false
     default: write,maintain,admin
+  pull-request-url:
+    description: The Pull Request URL
+    required: false
+    default: ${{ github.event.issue.pull_request.html_url }}
   reaction:
     description: Reaction to add to the triggering comment
     required: false
@@ -60,13 +64,18 @@ runs:
         allowed_contexts: pull_request
         permissions: ${{ inputs.permissions }}
         github_token: ${{ inputs.github-token }}
+    - id: stack
+      uses: shikanime-studio/actions/stack@main
+      if: steps.command.outputs.continue == 'true'
+      with:
+        github-token: ${{ inputs.github-token }}
+        pull-request-url: ${{ inputs.pull-request-url }}
     - id: pull_request
       shell: bash
+      env:
+        INFO_METHOD: ${{ steps.stack.outputs.method }}
+        PARAMS: ${{ steps.command.outputs.params }}
       run: |
-        PR_URL="${{ github.event.issue.pull_request.html_url }}"
-        PARAMS="${{ steps.command.outputs.params }}"
-        BRANCH=$(gh pr view "$PR_URL" --json headRefName -q .headRefName)
-
         METHOD=""
 
         if [ -n "$PARAMS" ]; then
@@ -75,10 +84,10 @@ runs:
               METHOD="ghstack"
               ;;
             slpr)
-              METHOD="slpr"
+              METHOD="sapling-pull-request"
               ;;
             ghpr)
-              METHOD="ghpr"
+              METHOD="github-pull-request"
               ;;
             *)
               echo "Unknown land method param '$PARAMS'. Expected 'ghstack', 'slpr' or 'ghpr'."
@@ -86,23 +95,20 @@ runs:
               ;;
           esac
         else
-          if [[ "$BRANCH" =~ ^gh/[^/]+/[0-9]+/head$ ]]; then
-            METHOD="ghstack"
-          elif [[ "$BRANCH" =~ ^pr[0-9]+$ ]]; then
-            METHOD="slpr"
-          else
-            METHOD="ghpr"
-          fi
+          METHOD="$INFO_METHOD"
         fi
 
         echo "method=$METHOD" >> "$GITHUB_OUTPUT"
       if: steps.command.outputs.continue == 'true'
-      env:
-        GH_TOKEN: ${{ inputs.github-token }}
     - shell: bash
+      env:
+        EMAIL: ${{ inputs.email }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        FULLNAME: ${{ inputs.fullname }}
+        REGISTRY: ${{ inputs.registry }}
       run: |
-        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- config \
-          --local ui.username "${{ inputs.fullname }} <${{ inputs.email }}>"
+        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- config \
+          --local ui.username "$FULLNAME <$EMAIL>"
       if: steps.command.outputs.continue == 'true'
     - id: importGPG
       uses: crazy-max/ghaction-import-gpg@v6
@@ -115,44 +121,56 @@ runs:
         inputs.sign-commits == 'true' &&
         steps.command.outputs.continue == 'true'
     - shell: bash
+      env:
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
+        REGISTRY: ${{ inputs.registry }}
       run: |
-        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- config \
-          --local gpg.key "${{ steps.importGPG.outputs.keyid }}" \
+        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- config \
+          --local gpg.key "$GPG_KEY_ID" \
           --local commit.gpgsign true
       if: |
         inputs.sign-commits == 'true' &&
-        steps.pull_request.outputs.method == 'slpr' &&
+        steps.pull_request.outputs.method == 'sapling-pull-request' &&
         steps.command.outputs.continue == 'true'
     - shell: bash
+      env:
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR_URL: ${{ inputs.pull-request-url }}
+        REGISTRY: ${{ inputs.registry }}
+        USERNAME: ${{ inputs.username }}
       run: |
-        PR_URL="${{ github.event.issue.pull_request.html_url }}"
-
-        cat > ~/.ghstackrc <<EOF
+        GHSTACKRC_PATH=$(mktemp)
+        trap 'rm -f "$GHSTACKRC_PATH"' EXIT
+        cat > "$GHSTACKRC_PATH" <<EOF
         [ghstack]
         github_url = github.com
-        github_oauth = ${{ inputs.github-token }}
-        github_username = ${{ inputs.username }}
+        github_oauth = $GH_TOKEN
+        github_username = $USERNAME
         EOF
 
-        nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- land \
+        nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- land \
           "$PR_URL"
       if: |
         steps.pull_request.outputs.method == 'ghstack' &&
         steps.command.outputs.continue == 'true'
-      env:
-        GH_TOKEN: ${{ inputs.github-token }}
     - shell: bash
+      env:
+        BASE: ${{ inputs.base }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR_URL: ${{ inputs.pull-request-url }}
+        REGISTRY: ${{ inputs.registry }}
       run: |
-        PR_URL="${{ github.event.issue.pull_request.html_url }}"
-
-        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr pull \
+        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- pr pull \
           --goto \
           "$PR_URL"
-        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- rebase \
-          --dest ${{ inputs.base }}
-        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- push \
-          --to ${{ inputs.base }}
-        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- push \
+        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- rebase \
+          --dest "$BASE"
+        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- push \
+          --to "$BASE"
+        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- push \
           --delete $(
             gh pr view \
               "$PR_URL" \
@@ -160,18 +178,17 @@ runs:
               -q .headRefName
           )
       if: |
-        steps.pull_request.outputs.method == 'slpr' &&
+        steps.pull_request.outputs.method == 'sapling-pull-request' &&
         steps.command.outputs.continue == 'true'
+    - shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
-    - shell: bash
+        PR_URL: ${{ inputs.pull-request-url }}
       run: |
-        PR_URL="${{ github.event.issue.pull_request.html_url }}"
-
         gh pr merge \
           --rebase \
           --delete-branch \
           "$PR_URL"
       if: |
-        steps.pull_request.outputs.method == 'ghpr' &&
+        steps.pull_request.outputs.method == 'github-pull-request' &&
         steps.command.outputs.continue == 'true'
