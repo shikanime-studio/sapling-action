@@ -23,8 +23,7 @@ runs:
     - if: ${{ steps.info.outputs.method == 'github-pull-request' }}
       env:
         HEAD_REF: ${{ inputs.head-ref }}
-      run: |
-        git push origin --delete "$HEAD_REF" || true
+      run: git push origin --delete "$HEAD_REF" || true
       shell: bash
     - if: ${{ steps.info.outputs.method == 'ghstack' }}
       env:
