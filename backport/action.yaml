@@ -21,6 +21,10 @@ inputs:
     description: Permissions to require for the command
     required: false
     default: write,maintain,admin
+  pull-request-url:
+    description: The Pull Request URL
+    required: false
+    default: ${{ github.event.issue.pull_request.html_url }}
   reaction:
     description: Reaction to add to the triggering comment
     required: false
@@ -49,26 +53,12 @@ runs:
         permissions: ${{ inputs.permissions }}
         github_token: ${{ inputs.github-token }}
         skip_ci: true
-    - id: pull_request
-      shell: bash
-      run: |
-        PR_URL="${{ github.event.issue.pull_request.html_url }}"
-        BRANCH=$(gh pr view "$PR_URL" --json headRefName -q .headRefName)
-
-        METHOD=""
-
-        if [[ "$BRANCH" =~ ^gh/[^/]+/[0-9]+/head$ ]]; then
-          METHOD="ghstack"
-        elif [[ "$BRANCH" =~ ^pr[0-9]+$ ]]; then
-          METHOD="slpr"
-        else
-          METHOD="ghpr"
-        fi
-
-        echo "method=$METHOD" >> "$GITHUB_OUTPUT"
+    - id: info
+      uses: shikanime-studio/actions/stack@main
       if: steps.command.outputs.continue == 'true'
-      env:
-        GH_TOKEN: ${{ inputs.github-token }}
+      with:
+        pull-request-url: ${{ inputs.pull-request-url }}
+        github-token: ${{ inputs.github-token }}
     - id: importGPG
       uses: crazy-max/ghaction-import-gpg@v6
       with:
@@ -80,111 +70,131 @@ runs:
         inputs.sign-commits == 'true' &&
         steps.command.outputs.continue == 'true'
     - shell: bash
+      env:
+        REGISTRY: ${{ inputs.registry }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
       run: |
-        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- config \
-          --local gpg.key "${{ steps.importGPG.outputs.keyid }}" \
+        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- config \
+          --local gpg.key "$GPG_KEY_ID" \
           --local commit.gpgsign true
       if: |
         inputs.sign-commits == 'true' &&
-        steps.pull_request.outputs.method == 'slpr' &&
+        steps.info.outputs.method == 'sapling-pull-request' &&
         steps.command.outputs.continue == 'true'
     - shell: bash
+      env:
+        TARGET_BRANCH: ${{ steps.command.outputs.params }}
+        GH_TOKEN: ${{ inputs.github-token }}
+        USERNAME: ${{ inputs.username }}
+        REGISTRY: ${{ inputs.registry }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        PR_URL: ${{ inputs.pull-request-url }}
       run: |
-        PR_URL="${{ github.event.issue.pull_request.html_url }}"
-        TARGET_BRANCH="${{ steps.command.outputs.params }}"
-
         if [ -z "$TARGET_BRANCH" ]; then
           echo "Error: backport target branch is required, e.g. '.backport | release-1.0'"
           exit 1
         fi
 
-        cat > ~/.ghstackrc <<EOF
+        GHSTACKRC_PATH=$(mktemp)
+        trap 'rm -f "$GHSTACKRC_PATH"' EXIT
+        cat > "$GHSTACKRC_PATH" <<EOF
         [ghstack]
         github_url = github.com
-        github_oauth = ${{ inputs.github-token }}
-        github_username = ${{ inputs.username }}
+        github_oauth = $GH_TOKEN
+        github_username = $USERNAME
         EOF
 
-        nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- checkout \
+        nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- checkout \
           "$PR_URL"
-        nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- unlink
-        nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- rebase \
+        nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- unlink
+        nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- rebase \
           --dest "$TARGET_BRANCH"
-        nix run "${{ inputs.registry }}#ghstack" ${{ inputs.extra-args }} -- submit
+        nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- submit
       if: |
-        steps.pull_request.outputs.method == 'ghstack' &&
+        steps.info.outputs.method == 'ghstack' &&
         steps.command.outputs.continue == 'true'
-      env:
-        GH_TOKEN: ${{ inputs.github-token }}
     - shell: bash
+      env:
+        TARGET_BRANCH: ${{ steps.command.outputs.params }}
+        GH_TOKEN: ${{ inputs.github-token }}
+        REGISTRY: ${{ inputs.registry }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        PR_URL: ${{ inputs.pull-request-url }}
       run: |
-        PR_URL="${{ github.event.issue.pull_request.html_url }}"
-        TARGET_BRANCH="${{ steps.command.outputs.params }}"
-
         if [ -z "$TARGET_BRANCH" ]; then
           echo "Error: backport target branch is required, e.g. '.backport | release-1.0'"
           exit 1
         fi
 
-        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr pull \
+        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- pr pull \
           --goto \
           "$PR_URL"
-        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr unlink
-        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- rebase \
+        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- pr unlink
+        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- rebase \
           --dest "$TARGET_BRANCH"
-        nix run "${{ inputs.registry }}#sapling" ${{ inputs.extra-args }} -- pr submit
+        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- pr submit
       if: |
-        steps.pull_request.outputs.method == 'slpr' &&
+        steps.info.outputs.method == 'sapling-pull-request' &&
         steps.command.outputs.continue == 'true'
-      env:
-        GH_TOKEN: ${{ inputs.github-token }}
     - shell: bash
+      env:
+        REGISTRY: ${{ inputs.registry }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
       run: |
-        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- config set \
           --repo signing.backend gpg
-        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- config set \
           --repo signing.sign-all true
-        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- config set \
-          --repo signing.key "${{ steps.importGPG.outputs.keyid }}"
+        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- config set \
+          --repo signing.key "$GPG_KEY_ID"
       if: |
         inputs.sign-commits == 'true' &&
-        steps.pull_request.outputs.method == 'ghpr' &&
+        steps.info.outputs.method == 'github-pull-request' &&
         steps.command.outputs.continue == 'true'
     - shell: bash
       continue-on-error: true
+      env:
+        REGISTRY: ${{ inputs.registry }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
       run: |
-        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- git init \
+        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- git init \
           --git-repo . \
           --colocate
       if: |
-        steps.pull_request.outputs.method == 'ghpr' &&
+        steps.info.outputs.method == 'github-pull-request' &&
         steps.command.outputs.continue == 'true'
     - shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR_URL: ${{ inputs.pull-request-url }}
+        TARGET_BRANCH: ${{ steps.command.outputs.params }}
+        REGISTRY: ${{ inputs.registry }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        USERNAME: ${{ inputs.username }}
       run: |
-        PR_URL="${{ github.event.issue.pull_request.html_url }}"
-        TARGET_BRANCH="${{ steps.command.outputs.params }}"
-
         if [ -z "$TARGET_BRANCH" ]; then
           echo "Error: backport target branch is required, e.g. '.backport | release-1.0'"
           exit 1
         fi
 
-        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- git fetch \
+        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- git fetch \
           --remote origin
 
-        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- config set \
+        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- config set \
           --repo templates.git_push_bookmark \
-          "\"${{ inputs.username }}/push-\" ++ change_id.short()"
+          "\"$USERNAME/push-\" ++ change_id.short()"
 
-        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- new \
+        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- new \
           "$TARGET_BRANCH@origin"
-        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- rebase \
+        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- rebase \
           -b @ \
           -o "$PR_URL"
-        nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- git push \
+        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- git push \
           --change @
 
-        PUSH_BRANCH=$(nix run "${{ inputs.registry }}#jujutsu" ${{ inputs.extra-args }} -- log \
+        PUSH_BRANCH=$(nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- log \
           --limit 1 \
           --template "{{bookmarks}}" \
           @)
@@ -198,7 +208,5 @@ runs:
           --title "$ORIG_TITLE" \
           --body-file "$ORIG_BODY_FILE"
       if: |
-        steps.pull_request.outputs.method == 'ghpr' &&
+        steps.info.outputs.method == 'github-pull-request' &&
         steps.command.outputs.continue == 'true'
-      env:
-        GH_TOKEN: ${{ inputs.github-token }}

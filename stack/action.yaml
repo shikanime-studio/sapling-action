@@ -1,0 +1,87 @@
+name: stack
+description: Get information about a pull request
+inputs:
+  github-token:
+    description: The GitHub Token
+    required: false
+    default: ${{ github.token }}
+  pull-request-url:
+    description: The Pull Request URL
+    required: false
+    default: ${{ github.event.issue.pull_request.html_url }}
+outputs:
+  base-ref:
+    description: The base ref name of the pull request
+    value: ${{ steps.info.outputs.base-ref }}
+  continue:
+    description: Whether to continue the workflow based on parent PR status
+    value: ${{ steps.info.outputs.continue }}
+  head-ref:
+    description: The head ref name of the pull request
+    value: ${{ steps.info.outputs.head-ref }}
+  method:
+    description: The method used to create the pull request (ghstack, sapling-pull-request, github-pull-request)
+    value: ${{ steps.info.outputs.method }}
+  parent-pull-request-url:
+    description: The parent pull request URL if part of a stack
+    value: ${{ steps.info.outputs.parent-pull-request-url }}
+runs:
+  using: composite
+  steps:
+    - id: info
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR_URL: ${{ inputs.pull-request-url }}
+      run: |
+        JSON=$(gh pr view "$PR_URL" --json headRefName,baseRefName,body)
+        BRANCH=$(echo "$JSON" | jq -r .headRefName)
+        BASE=$(echo "$JSON" | jq -r .baseRefName)
+        BODY=$(echo "$JSON" | jq -r .body)
+
+        echo "head-ref=$BRANCH" >> "$GITHUB_OUTPUT"
+        echo "base-ref=$BASE" >> "$GITHUB_OUTPUT"
+
+        METHOD=""
+
+        if [[ "$BRANCH" =~ ^gh/[^/]+/[0-9]+/head$ ]]; then
+          METHOD="ghstack"
+        elif [[ "$BODY" == *"Stack from [ghstack]"* ]]; then
+          METHOD="ghstack"
+        elif [[ "$BRANCH" =~ ^pr[0-9]+$ ]]; then
+          METHOD="sapling-pull-request"
+        elif [[ "$BODY" == *"Stack created with https://sapling-scm.com"* ]]; then
+          METHOD="sapling-pull-request"
+        else
+          METHOD="github-pull-request"
+        fi
+
+        echo "method=$METHOD" >> "$GITHUB_OUTPUT"
+
+        PARENT_PR=""
+
+        if [[ "$METHOD" == "ghstack" ]]; then
+          if echo "$BODY" | grep -q "__->__"; then
+            STACK_LINES=$(echo "$BODY" | grep "^* ")
+            PARENT_LINE=$(echo "$STACK_LINES" | grep -A 1 "__->__" | tail -n 1)
+
+            if [[ "$PARENT_LINE" != *__->__* ]]; then
+              PARENT_PR=$(echo "$PARENT_LINE" | sed -n 's/.*#\([0-9]*\).*/\1/p')
+            fi
+          fi
+        fi
+
+        CONTINUE="true"
+
+        if [[ -n "$PARENT_PR" ]]; then
+          echo "Checking parent PR #$PARENT_PR..."
+          STATUS_JSON=$(gh pr view "$PARENT_PR" --json url,statusCheckRollup)
+          PARENT_PR_URL=$(echo "$STATUS_JSON" | jq -r .url)
+
+          # Check if checks succeeded
+          STATE=$(echo "$STATUS_JSON" | jq -r '.statusCheckRollup.state')
+          CONTINUE=$([[ "$STATE" == "SUCCESS" ]] && echo "true" || echo "false")
+        fi
+
+        echo "parent-pull-request-url=$PARENT_PR_URL" >> "$GITHUB_OUTPUT"
+        echo "continue=$CONTINUE" >> "$GITHUB_OUTPUT"
