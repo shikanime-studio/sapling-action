@@ -2,57 +2,57 @@ name: close
 description: Close pull request from a PR comment
 inputs:
   extra-args:
+    default: ""
     description: Extra arguments to pass to `nix run`
     required: false
-    default: ""
   github-token:
+    default: ${{ github.token }}
     description: The GitHub Token
     required: false
-    default: ${{ github.token }}
   permissions:
+    default: write,maintain,admin
     description: Permissions to require for the command
     required: false
-    default: write,maintain,admin
   pull-request-url:
+    default: ${{ github.event.issue.pull_request.html_url }}
     description: The Pull Request URL
     required: false
-    default: ${{ github.event.issue.pull_request.html_url }}
   reaction:
+    default: rocket
     description: Reaction to add to the triggering comment
     required: false
-    default: rocket
   registry:
+    default: nixpkgs
     description: Nix registry to use
     required: false
-    default: nixpkgs
   username:
+    default: github-actions
     description: Username
     required: false
-    default: github-actions
 runs:
   using: composite
   steps:
-    - uses: github/command@v1
-      id: command
+    - id: command
+      uses: github/command@v1
       with:
-        command: .close
-        reaction: ${{ inputs.reaction }}
         allowed_contexts: pull_request
-        permissions: ${{ inputs.permissions }}
+        command: .close
         github_token: ${{ inputs.github-token }}
+        permissions: ${{ inputs.permissions }}
+        reaction: ${{ inputs.reaction }}
         skip_ci: true
     - id: stack
-      uses: shikanime-studio/actions/stack@main
       if: steps.command.outputs.continue == 'true'
+      uses: shikanime-studio/actions/stack@main
       with:
         github-token: ${{ inputs.github-token }}
         pull-request-url: ${{ inputs.pull-request-url }}
-    - id: pull_request
-      shell: bash
-      env:
+    - env:
         GH_TOKEN: ${{ inputs.github-token }}
         INFO_METHOD: ${{ steps.stack.outputs.method }}
         PARAMS: ${{ steps.command.outputs.params }}
+      id: pull_request
+      if: steps.command.outputs.continue == 'true'
       run: |
         METHOD=""
 
@@ -77,14 +77,16 @@ runs:
         fi
 
         echo "method=$METHOD" >> "$GITHUB_OUTPUT"
-      if: steps.command.outputs.continue == 'true'
-    - shell: bash
-      env:
+      shell: bash
+    - env:
         EXTRA_ARGS: ${{ inputs.extra-args }}
         GH_TOKEN: ${{ inputs.github-token }}
         PR_URL: ${{ inputs.pull-request-url }}
         REGISTRY: ${{ inputs.registry }}
         USERNAME: ${{ inputs.username }}
+      if: |
+        steps.pull_request.outputs.method == 'ghstack' &&
+        steps.command.outputs.continue == 'true'
       run: |
         GHSTACKRC_PATH=$(mktemp)
         trap 'rm -f "$GHSTACKRC_PATH"' EXIT
@@ -98,17 +100,15 @@ runs:
         nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- action \
           --close \
           "$PR_URL"
-      if: |
-        steps.pull_request.outputs.method == 'ghstack' &&
-        steps.command.outputs.continue == 'true'
-    - shell: bash
-      env:
+      shell: bash
+    - env:
         GH_TOKEN: ${{ inputs.github-token }}
         PR_URL: ${{ inputs.pull-request-url }}
+      if: |
+        (steps.pull_request.outputs.method == 'sapling-pull-request' || steps.pull_request.outputs.method == 'github-pull-request') &&
+        steps.command.outputs.continue == 'true'
       run: |
         gh pr close \
           --delete-branch \
           "$PR_URL"
-      if: |
-        (steps.pull_request.outputs.method == 'sapling-pull-request' || steps.pull_request.outputs.method == 'github-pull-request') &&
-        steps.command.outputs.continue == 'true'
+      shell: bash
