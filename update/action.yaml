@@ -1,53 +1,53 @@
 name: update
 author: Shikanime Studio
 branding:
-  icon: globe
   color: gray-dark
+  icon: globe
 description: Update Nix flake and land changes
 inputs:
   base:
+    default: main
     description: The base branch to create or update against
     required: false
-    default: main
   commit-message:
+    default: Update Flake
     description: Commit message
     required: false
-    default: Update Flake
   email:
-    description: Email
     default: github-actions[bot]@users.noreply.github.com
+    description: Email
   extra-args:
+    default: ""
     description: Extra arguments to pass to `nix run`
     required: false
-    default: ""
   fullname:
+    default: github-actions[bot]
     description: Full name
     required: false
-    default: github-actions[bot]
   github-token:
+    default: ${{ github.token }}
     description: The GitHub Token
     required: false
-    default: ${{ github.token }}
   gpg-passphrase:
+    default: ""
     description: GPG Private Key Passphrase for the GPG Private Key with which to sign the commits in the PR to be created
-    default: ""
   gpg-private-key:
-    description: GPG Private Key with which to sign the commits in the PR to be created
     default: ""
+    description: GPG Private Key with which to sign the commits in the PR to be created
   method:
+    default: ghstack
     description: Publication method, one of 'ghstack', 'sapling-pull-request' or 'github-pull-request'
     required: false
-    default: ghstack
   registry:
+    default: nixpkgs
     description: Nix registry to use
     required: false
-    default: nixpkgs
   sign-commits:
-    description: Set to true if the action should sign the commit with GPG
     default: false
+    description: Set to true if the action should sign the commit with GPG
   username:
-    description: Username
     default: github-actions
+    description: Username
 runs:
   using: composite
   steps:
@@ -59,35 +59,39 @@ runs:
         git_user_signingkey: true
         gpg_private_key: ${{ inputs.gpg-private-key }}
         passphrase: ${{ inputs.gpg-passphrase }}
-    - run: |
+    - env:
+        EMAIL: ${{ inputs.email }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        FULLNAME: ${{ inputs.fullname }}
+        REGISTRY: ${{ inputs.registry }}
+      run: |
         nix flake update \
           --accept-flake-config
         nix run "$REGISTRY#sapling" $EXTRA_ARGS -- config \
           --local ui.username "$FULLNAME <$EMAIL>"
       shell: bash
-      env:
-        EMAIL: ${{ inputs.email }}
-        EXTRA_ARGS: ${{ inputs.extra-args }}
-        FULLNAME: ${{ inputs.fullname }}
-        REGISTRY: ${{ inputs.registry }}
-    - if: ${{ !contains('ghstack,sapling-pull-request,github-pull-request', inputs.method) }}
+    - env:
+        METHOD: ${{ inputs.method }}
+      if: ${{ !contains('ghstack,sapling-pull-request,github-pull-request', inputs.method) }}
       run: |
         echo "Unknown update method '$METHOD'. Expected 'ghstack', 'sapling-pull-request' or 'github-pull-request'."
         exit 1
       shell: bash
-      env:
-        METHOD: ${{ inputs.method }}
-    - if: ${{ inputs.sign-commits && inputs.method == 'sapling-pull-request' }}
+    - env:
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
+        REGISTRY: ${{ inputs.registry }}
+      if: ${{ inputs.sign-commits && inputs.method == 'sapling-pull-request' }}
       run: |
         nix run "$REGISTRY#sapling" $EXTRA_ARGS -- config \
           --local commit.gpgsign true \
           --local gpg.key "$GPG_KEY_ID"
       shell: bash
-      env:
+    - env:
         EXTRA_ARGS: ${{ inputs.extra-args }}
         GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
         REGISTRY: ${{ inputs.registry }}
-    - if: ${{ inputs.sign-commits && inputs.method == 'github-pull-request' }}
+      if: ${{ inputs.sign-commits && inputs.method == 'github-pull-request' }}
       run: |
         nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- config set \
           --repo signing.backend gpg
@@ -96,18 +100,14 @@ runs:
         nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- config set \
           --repo signing.key "$GPG_KEY_ID"
       shell: bash
-      env:
-        EXTRA_ARGS: ${{ inputs.extra-args }}
-        GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
-        REGISTRY: ${{ inputs.registry }}
-    - run: |
-        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- ci \
-          --message "$COMMIT_MESSAGE"
-      shell: bash
-      env:
+    - env:
         COMMIT_MESSAGE: ${{ inputs.commit-message }}
         EXTRA_ARGS: ${{ inputs.extra-args }}
         REGISTRY: ${{ inputs.registry }}
+      run: |
+        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- ci \
+          --message "$COMMIT_MESSAGE"
+      shell: bash
     - env:
         EXTRA_ARGS: ${{ inputs.extra-args }}
         GH_TOKEN: ${{ inputs.github-token }}
@@ -125,8 +125,7 @@ runs:
         github_username = $USERNAME
         EOF
 
-        nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- \
-          submit
+        nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- submit
       shell: bash
     - env:
         EXTRA_ARGS: ${{ inputs.extra-args }}
@@ -141,8 +140,8 @@ runs:
         EXTRA_ARGS: ${{ inputs.extra-args }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
         REGISTRY: ${{ inputs.registry }}
-      if: inputs.method == 'github-pull-request'
       continue-on-error: true
+      if: inputs.method == 'github-pull-request'
       run: |
         nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- git init \
           --git-repo . \

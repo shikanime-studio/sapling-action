@@ -2,13 +2,13 @@ name: stack
 description: Get information about a pull request
 inputs:
   github-token:
+    default: ${{ github.token }}
     description: The GitHub Token
     required: false
-    default: ${{ github.token }}
   pull-request-url:
+    default: ${{ github.event.issue.pull_request.html_url }}
     description: The Pull Request URL
     required: false
-    default: ${{ github.event.issue.pull_request.html_url }}
 outputs:
   base-ref:
     description: The base ref name of the pull request
@@ -28,11 +28,10 @@ outputs:
 runs:
   using: composite
   steps:
-    - id: stack
-      shell: bash
-      env:
+    - env:
         GH_TOKEN: ${{ inputs.github-token }}
         PR_URL: ${{ inputs.pull-request-url }}
+      id: stack
       run: |
         JSON=$(gh pr view "$PR_URL" --json headRefName,baseRefName,body)
         BRANCH=$(echo "$JSON" | jq -r .headRefName)
@@ -85,3 +84,4 @@ runs:
 
         echo "parent-pull-request-url=$PARENT_PR_URL" >> "$GITHUB_OUTPUT"
         echo "continue=$CONTINUE" >> "$GITHUB_OUTPUT"
+      shell: bash
