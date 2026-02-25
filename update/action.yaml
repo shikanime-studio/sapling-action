@@ -66,7 +66,7 @@ runs:
       run: |
         nix $EXTRA_FLAGS flake update \
           --accept-flake-config
-        nix run "$REGISTRY#sapling" $EXTRA_FLAGS -- config \
+        nix run "$REGISTRY#sapling" -- config \
           --local ui.username "$FULLNAME <$EMAIL>" $EXTRA_FLAGS
       shell: bash
     - env:
@@ -81,7 +81,7 @@ runs:
         REGISTRY: ${{ inputs.registry }}
       if: ${{ inputs.sign-commits && inputs.method == 'sapling-pull-request' }}
       run: |
-        nix run "$REGISTRY#sapling" $EXTRA_FLAGS -- config \
+        nix run "$REGISTRY#sapling" -- config \
           --local commit.gpgsign true \
           --local gpg.key "$GPG_KEY_ID" $EXTRA_FLAGS
       shell: bash
@@ -90,18 +90,18 @@ runs:
         REGISTRY: ${{ inputs.registry }}
       if: ${{ inputs.sign-commits && inputs.method == 'github-pull-request' }}
       run: |
-        nix run "$REGISTRY#jujutsu" $EXTRA_FLAGS -- config set \
+        nix run "$REGISTRY#jujutsu" -- config set \
           --repo signing.backend gpg $EXTRA_FLAGS
-        nix run "$REGISTRY#jujutsu" $EXTRA_FLAGS -- config set \
+        nix run "$REGISTRY#jujutsu" -- config set \
           --repo signing.sign-all true $EXTRA_FLAGS
-        nix run "$REGISTRY#jujutsu" $EXTRA_FLAGS -- config set \
+        nix run "$REGISTRY#jujutsu" -- config set \
           --repo signing.key "$GPG_KEY_ID" $EXTRA_FLAGS
       shell: bash
     - env:
         COMMIT_MESSAGE: ${{ inputs.commit-message }}
         REGISTRY: ${{ inputs.registry }}
       run: |
-        nix run "$REGISTRY#sapling" $EXTRA_FLAGS -- ci \
+        nix run "$REGISTRY#sapling" -- ci \
           --message "$COMMIT_MESSAGE" $EXTRA_FLAGS
       shell: bash
     - env:
@@ -122,14 +122,14 @@ runs:
         REGISTRY: ${{ inputs.registry }}
       if: inputs.method == 'ghstack'
       run: |
-        nix run "$REGISTRY#ghstack" $EXTRA_FLAGS -- submit $EXTRA_FLAGS
+        nix run "$REGISTRY#ghstack" -- submit $EXTRA_FLAGS
       shell: bash
     - env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         REGISTRY: ${{ inputs.registry }}
       if: inputs.method == 'sapling-pull-request'
       run: |
-        nix run "$REGISTRY#sapling" $EXTRA_FLAGS -- pr \
+        nix run "$REGISTRY#sapling" -- pr \
           submit $EXTRA_FLAGS
       shell: bash
     - env:
@@ -138,7 +138,7 @@ runs:
       continue-on-error: true
       if: inputs.method == 'github-pull-request'
       run: |
-        nix run "$REGISTRY#jujutsu" $EXTRA_FLAGS -- git \
+        nix run "$REGISTRY#jujutsu" -- git \
           init $EXTRA_FLAGS
       shell: bash
     - env:
@@ -149,17 +149,17 @@ runs:
         USERNAME: ${{ inputs.username }}
       if: inputs.method == 'github-pull-request'
       run: |
-        nix run "$REGISTRY#jujutsu" $EXTRA_FLAGS -- git fetch \
+        nix run "$REGISTRY#jujutsu" -- git fetch \
           --remote origin $EXTRA_FLAGS
 
-        nix run "$REGISTRY#jujutsu" $EXTRA_FLAGS -- config set \
+        nix run "$REGISTRY#jujutsu" -- config set \
           --repo templates.git_push_bookmark \
           "\"$USERNAME/push-\" ++ change_id.short()" $EXTRA_FLAGS
 
-        nix run "$REGISTRY#jujutsu" $EXTRA_FLAGS -- git push \
+        nix run "$REGISTRY#jujutsu" -- git push \
           --change @ $EXTRA_FLAGS
 
-        PUSH_BRANCH=$(nix run "$REGISTRY#jujutsu" $EXTRA_FLAGS -- log \
+        PUSH_BRANCH=$(nix run "$REGISTRY#jujutsu" -- log \
           --limit 1 \
           --template "{{bookmarks}}" \
           @ $EXTRA_FLAGS)
