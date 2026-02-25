@@ -59,7 +59,7 @@ runs:
 
         PARENT_PR=""
 
-        if [[ "$METHOD" == "ghstack" ]]; then
+        if [[ "$METHOD" == "ghstack" || "$METHOD" == "sapling-pull-request" ]]; then
           if echo "$BODY" | grep -q "__->__"; then
             STACK_LINES=$(echo "$BODY" | grep "^* ")
             PARENT_LINE=$(echo "$STACK_LINES" | grep -A 1 "__->__" | tail -n 1)
