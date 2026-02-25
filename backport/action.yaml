@@ -83,12 +83,27 @@ runs:
           --local commit.gpgsign true
       shell: bash
     - env:
-        EXTRA_ARGS: ${{ inputs.extra-args }}
         GH_TOKEN: ${{ inputs.github-token }}
+        USERNAME: ${{ inputs.username }}
+      if: |
+        steps.stack.outputs.method == 'ghstack' &&
+        steps.command.outputs.continue == 'true'
+      run: |
+        GHSTACKRC_PATH=$(mktemp)
+        cat > "$GHSTACKRC_PATH" <<EOF
+        [ghstack]
+        github_url = github.com
+        github_oauth = $GH_TOKEN
+        github_username = $USERNAME
+        EOF
+        echo "GHSTACKRC_PATH=$GHSTACKRC_PATH" >> "$GITHUB_ENV"
+      shell: bash
+    - env:
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        GHSTACKRC_PATH: ${{ env.GHSTACKRC_PATH }}
         PR_URL: ${{ inputs.pull-request-url }}
         REGISTRY: ${{ inputs.registry }}
         TARGET_BRANCH: ${{ steps.command.outputs.params }}
-        USERNAME: ${{ inputs.username }}
       if: |
         steps.stack.outputs.method == 'ghstack' &&
         steps.command.outputs.continue == 'true'
@@ -97,15 +112,6 @@ runs:
           echo "Error: backport target branch is required, e.g. '.backport | release-1.0'"
           exit 1
         fi
-
-        GHSTACKRC_PATH=$(mktemp)
-        trap 'rm -f "$GHSTACKRC_PATH"' EXIT
-        cat > "$GHSTACKRC_PATH" <<EOF
-        [ghstack]
-        github_url = github.com
-        github_oauth = $GH_TOKEN
-        github_username = $USERNAME
-        EOF
 
         nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- checkout \
           "$PR_URL"

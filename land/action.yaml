@@ -134,24 +134,30 @@ runs:
           --local commit.gpgsign true
       shell: bash
     - env:
-        EXTRA_ARGS: ${{ inputs.extra-args }}
         GH_TOKEN: ${{ inputs.github-token }}
-        PR_URL: ${{ inputs.pull-request-url }}
-        REGISTRY: ${{ inputs.registry }}
         USERNAME: ${{ inputs.username }}
       if: |
         steps.pull_request.outputs.method == 'ghstack' &&
         steps.command.outputs.continue == 'true'
       run: |
         GHSTACKRC_PATH=$(mktemp)
-        trap 'rm -f "$GHSTACKRC_PATH"' EXIT
         cat > "$GHSTACKRC_PATH" <<EOF
         [ghstack]
         github_url = github.com
         github_oauth = $GH_TOKEN
         github_username = $USERNAME
         EOF
-
+        echo "GHSTACKRC_PATH=$GHSTACKRC_PATH" >> "$GITHUB_ENV"
+      shell: bash
+    - env:
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        GHSTACKRC_PATH: ${{ env.GHSTACKRC_PATH }}
+        PR_URL: ${{ inputs.pull-request-url }}
+        REGISTRY: ${{ inputs.registry }}
+      if: |
+        steps.pull_request.outputs.method == 'ghstack' &&
+        steps.command.outputs.continue == 'true'
+      run: |
         nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- land \
           "$PR_URL"
       shell: bash
