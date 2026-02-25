@@ -81,8 +81,7 @@ runs:
       run: |
         nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- config \
           --local gpg.key "$GPG_KEY_ID" \
-          --local commit.gpgsign true \
-          $SL_EXTRA_FLAGS
+          --local commit.gpgsign true $SL_EXTRA_FLAGS
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
@@ -114,15 +113,12 @@ runs:
         fi
 
         nix run "$REGISTRY#ghstack" $NIX_EXTRA_FLAGS -- checkout \
-          "$PR_URL" \
-          $GHSTACK_EXTRA_FLAGS
+          "$PR_URL" $GHSTACK_EXTRA_FLAGS
         nix run "$REGISTRY#ghstack" $NIX_EXTRA_FLAGS -- unlink \
-          "$PR_URL" \
-          $GHSTACK_EXTRA_FLAGS
+          "$PR_URL" $GHSTACK_EXTRA_FLAGS
         git fetch origin "$BASE"
         git rebase "origin/$BASE"
-        nix run "$REGISTRY#ghstack" $NIX_EXTRA_FLAGS -- submit \
-          $GHSTACK_EXTRA_FLAGS
+        nix run "$REGISTRY#ghstack" $NIX_EXTRA_FLAGS -- submit $GHSTACK_EXTRA_FLAGS
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
@@ -138,15 +134,13 @@ runs:
           exit 1
         fi
 
-        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- pr checkout \
+        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- pr pull \
           --goto \
-          "$PR_URL" \
-          $SL_EXTRA_FLAGS
-        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- pr unlink \
-          $SL_EXTRA_FLAGS
+          "$PR_URL" $SL_EXTRA_FLAGS
+        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- pr \
+          unlink $SL_EXTRA_FLAGS
         nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- rebase \
-          --dest "$TARGET_BRANCH" \
-          $SL_EXTRA_FLAGS
+          --dest "$TARGET_BRANCH" $SL_EXTRA_FLAGS
         nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- pr submit \
           $SL_EXTRA_FLAGS
       shell: bash
@@ -159,14 +153,11 @@ runs:
         steps.command.outputs.continue == 'true'
       run: |
         nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- config set \
-          --repo signing.backend gpg \
-          $NIX_EXTRA_FLAGS
+          --repo signing.backend gpg $NIX_EXTRA_FLAGS
         nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- config set \
-          --repo signing.sign-all true \
-          $NIX_EXTRA_FLAGS
+          --repo signing.sign-all true $NIX_EXTRA_FLAGS
         nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- config set \
-          --repo signing.key "$GPG_KEY_ID" \
-          $NIX_EXTRA_FLAGS
+          --repo signing.key "$GPG_KEY_ID" $NIX_EXTRA_FLAGS
       shell: bash
     - continue-on-error: true
       env:
@@ -177,8 +168,7 @@ runs:
       run: |
         nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- git init \
           --git-repo . \
-          --colocate \
-          $NIX_EXTRA_FLAGS
+          --colocate $NIX_EXTRA_FLAGS
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
@@ -196,30 +186,24 @@ runs:
         fi
 
         nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- git fetch \
-          --remote origin \
-          $NIX_EXTRA_FLAGS
+          --remote origin $NIX_EXTRA_FLAGS
 
         nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- config set \
           --repo templates.git_push_bookmark \
-          "\"$USERNAME/push-\" ++ change_id.short()" \
-          $NIX_EXTRA_FLAGS
+          "\"$USERNAME/push-\" ++ change_id.short()" $NIX_EXTRA_FLAGS
 
         nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- new \
-          "$TARGET_BRANCH@origin" \
-          $NIX_EXTRA_FLAGS
+          "$TARGET_BRANCH@origin" $NIX_EXTRA_FLAGS
         nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- rebase \
           -b @ \
-          -o "$PR_URL" \
-          $NIX_EXTRA_FLAGS
+          -o "$PR_URL" $NIX_EXTRA_FLAGS
         nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- git push \
-          --change @ \
-          $NIX_EXTRA_FLAGS
+          --change @ $NIX_EXTRA_FLAGS
 
         PUSH_BRANCH=$(nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- log \
           --limit 1 \
           --template "{{bookmarks}}" \
-          @ \
-          $NIX_EXTRA_FLAGS)
+          @ $NIX_EXTRA_FLAGS)
 
         ORIG_TITLE=$(gh pr view "$PR_URL" --json title -q .title)
         ORIG_BODY_FILE=<(gh pr view "$PR_URL" --json body -q .body)

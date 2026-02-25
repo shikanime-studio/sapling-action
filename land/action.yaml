@@ -111,8 +111,7 @@ runs:
         steps.command.outputs.continue == 'true'
       run: |
         nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- config \
-          --local ui.username "$FULLNAME <$EMAIL>" \
-          $SL_EXTRA_FLAGS
+          --local ui.username "$FULLNAME <$EMAIL>" $SL_EXTRA_FLAGS
       shell: bash
     - id: importGPG
       if: |
@@ -134,8 +133,7 @@ runs:
       run: |
         nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- config \
           --local gpg.key "$GPG_KEY_ID" \
-          --local commit.gpgsign true \
-          $SL_EXTRA_FLAGS
+          --local commit.gpgsign true $SL_EXTRA_FLAGS
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
@@ -161,8 +159,7 @@ runs:
         steps.command.outputs.continue == 'true'
       run: |
         nix run "$REGISTRY#ghstack" $NIX_EXTRA_FLAGS -- land \
-          "$PR_URL" \
-          $GHSTACK_EXTRA_FLAGS
+          "$PR_URL" $GHSTACK_EXTRA_FLAGS
       shell: bash
     - env:
         BASE: ${{ inputs.base }}
@@ -173,23 +170,19 @@ runs:
         steps.pull_request.outputs.method == 'sapling-pull-request' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- pr checkout \
+        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- pr pull \
           --goto \
-          "$PR_URL" \
-          $SL_EXTRA_FLAGS
+          "$PR_URL" $SL_EXTRA_FLAGS
 
         nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- rebase \
-          --dest "$BASE" \
-          $SL_EXTRA_FLAGS
+          --dest "$BASE" $SL_EXTRA_FLAGS
 
         nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- push \
-          --to "$BASE" \
-          $SL_EXTRA_FLAGS
+          --to "$BASE" $SL_EXTRA_FLAGS
 
         DELETE_BRANCH=$(gh pr view "$PR_URL" --json headRefName -q .headRefName)
         nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- push \
-          --delete $DELETE_BRANCH \
-          $SL_EXTRA_FLAGS
+          --delete $DELETE_BRANCH $SL_EXTRA_FLAGS
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}

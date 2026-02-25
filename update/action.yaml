@@ -69,8 +69,7 @@ runs:
         nix $NIX_EXTRA_FLAGS flake update \
           --accept-flake-config
         nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- config \
-          --local ui.username "$FULLNAME <$EMAIL>" \
-          $SL_EXTRA_FLAGS
+          --local ui.username "$FULLNAME <$EMAIL>" $SL_EXTRA_FLAGS
       shell: bash
     - env:
         METHOD: ${{ inputs.method }}
@@ -86,8 +85,7 @@ runs:
       run: |
         nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- config \
           --local commit.gpgsign true \
-          --local gpg.key "$GPG_KEY_ID" \
-          $SL_EXTRA_FLAGS
+          --local gpg.key "$GPG_KEY_ID" $SL_EXTRA_FLAGS
       shell: bash
     - env:
         GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
@@ -95,22 +93,18 @@ runs:
       if: ${{ inputs.sign-commits && inputs.method == 'github-pull-request' }}
       run: |
         nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- config set \
-          --repo signing.backend gpg \
-          $NIX_EXTRA_FLAGS
+          --repo signing.backend gpg $NIX_EXTRA_FLAGS
         nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- config set \
-          --repo signing.sign-all true \
-          $NIX_EXTRA_FLAGS
+          --repo signing.sign-all true $NIX_EXTRA_FLAGS
         nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- config set \
-          --repo signing.key "$GPG_KEY_ID" \
-          $NIX_EXTRA_FLAGS
+          --repo signing.key "$GPG_KEY_ID" $NIX_EXTRA_FLAGS
       shell: bash
     - env:
         COMMIT_MESSAGE: ${{ inputs.commit-message }}
         REGISTRY: ${{ inputs.registry }}
       run: |
         nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- ci \
-          --message "$COMMIT_MESSAGE" \
-          $SL_EXTRA_FLAGS
+          --message "$COMMIT_MESSAGE" $SL_EXTRA_FLAGS
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
@@ -130,8 +124,7 @@ runs:
         REGISTRY: ${{ inputs.registry }}
       if: inputs.method == 'ghstack'
       run: |
-        nix run "$REGISTRY#ghstack" $NIX_EXTRA_FLAGS -- submit \
-          $GHSTACK_EXTRA_FLAGS
+        nix run "$REGISTRY#ghstack" $NIX_EXTRA_FLAGS -- submit $GHSTACK_EXTRA_FLAGS
       shell: bash
     - env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
@@ -149,8 +142,7 @@ runs:
       run: |
         nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- git init \
           --git-repo . \
-          --colocate \
-          $NIX_EXTRA_FLAGS
+          --colocate $NIX_EXTRA_FLAGS
       shell: bash
     - env:
         BASE: ${{ inputs.base }}
@@ -161,23 +153,19 @@ runs:
       if: inputs.method == 'github-pull-request'
       run: |
         nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- git fetch \
-          --remote origin \
-          $NIX_EXTRA_FLAGS
+          --remote origin $NIX_EXTRA_FLAGS
 
         nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- config set \
           --repo templates.git_push_bookmark \
-          "\"$USERNAME/push-\" ++ change_id.short()" \
-          $NIX_EXTRA_FLAGS
+          "\"$USERNAME/push-\" ++ change_id.short()" $NIX_EXTRA_FLAGS
 
         nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- git push \
-          --change @ \
-          $NIX_EXTRA_FLAGS
+          --change @ $NIX_EXTRA_FLAGS
 
         PUSH_BRANCH=$(nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- log \
           --limit 1 \
           --template "{{bookmarks}}" \
-          @ \
-          $NIX_EXTRA_FLAGS)
+          @ $NIX_EXTRA_FLAGS)
 
         EXISTING=$(gh pr list \
           --head "$PUSH_BRANCH" \

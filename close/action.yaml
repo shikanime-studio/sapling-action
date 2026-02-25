@@ -105,8 +105,7 @@ runs:
       run: |
         nix run "$REGISTRY#ghstack" $NIX_EXTRA_FLAGS -- action \
           --close \
-          "$PR_URL" \
-          $GHSTACK_EXTRA_FLAGS
+          "$PR_URL" $GHSTACK_EXTRA_FLAGS
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
@@ -114,8 +113,5 @@ runs:
       if: |
         (steps.pull_request.outputs.method == 'sapling-pull-request' || steps.pull_request.outputs.method == 'github-pull-request') &&
         steps.command.outputs.continue == 'true'
-      run: |
-        gh pr close \
-          --delete-branch \
-          "$PR_URL"
+      run: gh pr close --delete-branch "$PR_URL"
       shell: bash
