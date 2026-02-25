@@ -64,7 +64,7 @@ runs:
             STACK_LINES=$(echo "$BODY" | grep "^* ")
             PARENT_LINE=$(echo "$STACK_LINES" | grep -A 1 "__->__" | tail -n 1)
 
-            if [[ "$PARENT_LINE" != *__->__* ]]; then
+            if [[ "$PARENT_LINE" != *"__->__"* ]]; then
               PARENT_PR=$(echo "$PARENT_LINE" | sed -n 's/.*#\([0-9]*\).*/\1/p')
             fi
           fi
