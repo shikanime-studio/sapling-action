@@ -71,23 +71,23 @@ runs:
         github-token: ${{ inputs.github-token }}
         pull-request-url: ${{ inputs.pull-request-url }}
     - env:
-        INFO_METHOD: ${{ steps.stack.outputs.method }}
+        METHOD: ${{ steps.stack.outputs.method }}
         PARAMS: ${{ steps.command.outputs.params }}
       id: pull_request
       if: steps.command.outputs.continue == 'true'
       run: |
-        METHOD=""
+        CMD_METHOD=""
 
         if [ -n "$PARAMS" ]; then
           case "$PARAMS" in
             ghstack)
-              METHOD="ghstack"
+              CMD_METHOD="ghstack"
               ;;
             slpr)
-              METHOD="sapling-pull-request"
+              CMD_METHOD="sapling-pull-request"
               ;;
             ghpr)
-              METHOD="github-pull-request"
+              CMD_METHOD="github-pull-request"
               ;;
             *)
               echo "Unknown land method param '$PARAMS'. Expected 'ghstack', 'slpr' or 'ghpr'."
@@ -95,10 +95,10 @@ runs:
               ;;
           esac
         else
-          METHOD="$INFO_METHOD"
+          CMD_METHOD="$METHOD"
         fi
 
-        echo "method=$METHOD" >> "$GITHUB_OUTPUT"
+        echo "method=$CMD_METHOD" >> "$GITHUB_OUTPUT"
       shell: bash
     - env:
         EMAIL: ${{ inputs.email }}
