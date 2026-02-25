@@ -107,7 +107,9 @@ runs:
         EXTRA_ARGS: ${{ inputs.extra-args }}
         FULLNAME: ${{ inputs.fullname }}
         REGISTRY: ${{ inputs.registry }}
-      if: steps.command.outputs.continue == 'true'
+      if: |
+        steps.pull_request.outputs.method == 'sapling-pull-request' &&
+        steps.command.outputs.continue == 'true'
       run: |
         nix run "$REGISTRY#sapling" $EXTRA_ARGS -- config \
           --local ui.username "$FULLNAME <$EMAIL>"
