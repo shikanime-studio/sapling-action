@@ -49,7 +49,7 @@ runs:
   steps:
     - if: runner.debug == '1'
       run: |
-        echo "EXTRA_FLAGS=--debug" >> "$GITHUB_ENV"
+        echo "DEBUG_FLAG=--debug" >> "$GITHUB_ENV"
       shell: bash
     - id: importGPG
       if: ${{ inputs.sign-commits }}
@@ -64,10 +64,10 @@ runs:
         FULLNAME: ${{ inputs.fullname }}
         REGISTRY: ${{ inputs.registry }}
       run: |
-        nix $EXTRA_FLAGS flake update \
+        nix $DEBUG_FLAG flake update \
           --accept-flake-config
         nix run "$REGISTRY#sapling" -- config \
-          --local ui.username "$FULLNAME <$EMAIL>" $EXTRA_FLAGS
+          --local ui.username "$FULLNAME <$EMAIL>" $DEBUG_FLAG
       shell: bash
     - env:
         METHOD: ${{ inputs.method }}
@@ -83,7 +83,7 @@ runs:
       run: |
         nix run "$REGISTRY#sapling" -- config \
           --local commit.gpgsign true \
-          --local gpg.key "$GPG_KEY_ID" $EXTRA_FLAGS
+          --local gpg.key "$GPG_KEY_ID" $DEBUG_FLAG
       shell: bash
     - env:
         GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
@@ -91,18 +91,18 @@ runs:
       if: ${{ inputs.sign-commits && inputs.method == 'github-pull-request' }}
       run: |
         nix run "$REGISTRY#jujutsu" -- config set \
-          --repo signing.backend gpg $EXTRA_FLAGS
+          --repo signing.backend gpg $DEBUG_FLAG
         nix run "$REGISTRY#jujutsu" -- config set \
-          --repo signing.sign-all true $EXTRA_FLAGS
+          --repo signing.sign-all true $DEBUG_FLAG
         nix run "$REGISTRY#jujutsu" -- config set \
-          --repo signing.key "$GPG_KEY_ID" $EXTRA_FLAGS
+          --repo signing.key "$GPG_KEY_ID" $DEBUG_FLAG
       shell: bash
     - env:
         COMMIT_MESSAGE: ${{ inputs.commit-message }}
         REGISTRY: ${{ inputs.registry }}
       run: |
         nix run "$REGISTRY#sapling" -- ci \
-          --message "$COMMIT_MESSAGE" $EXTRA_FLAGS
+          --message "$COMMIT_MESSAGE" $DEBUG_FLAG
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
@@ -122,7 +122,7 @@ runs:
         REGISTRY: ${{ inputs.registry }}
       if: inputs.method == 'ghstack'
       run: |
-        nix run "$REGISTRY#ghstack" -- $EXTRA_FLAGS submit
+        nix run "$REGISTRY#ghstack" -- $DEBUG_FLAG submit
       shell: bash
     - env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
@@ -130,7 +130,7 @@ runs:
       if: inputs.method == 'sapling-pull-request'
       run: |
         nix run "$REGISTRY#sapling" -- pr \
-          submit $EXTRA_FLAGS
+          submit $DEBUG_FLAG
       shell: bash
     - env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
@@ -139,7 +139,7 @@ runs:
       if: inputs.method == 'github-pull-request'
       run: |
         nix run "$REGISTRY#jujutsu" -- git \
-          init $EXTRA_FLAGS
+          init $DEBUG_FLAG
       shell: bash
     - env:
         BASE: ${{ inputs.base }}
@@ -150,19 +150,19 @@ runs:
       if: inputs.method == 'github-pull-request'
       run: |
         nix run "$REGISTRY#jujutsu" -- git fetch \
-          --remote origin $EXTRA_FLAGS
+          --remote origin $DEBUG_FLAG
 
         nix run "$REGISTRY#jujutsu" -- config set \
           --repo templates.git_push_bookmark \
-          "\"$USERNAME/push-\" ++ change_id.short()" $EXTRA_FLAGS
+          "\"$USERNAME/push-\" ++ change_id.short()" $DEBUG_FLAG
 
         nix run "$REGISTRY#jujutsu" -- git push \
-          --change @ $EXTRA_FLAGS
+          --change @ $DEBUG_FLAG
 
         PUSH_BRANCH=$(nix run "$REGISTRY#jujutsu" -- log \
           --limit 1 \
           --template "{{bookmarks}}" \
-          @ $EXTRA_FLAGS)
+          @ $DEBUG_FLAG)
 
         EXISTING=$(gh pr list \
           --head "$PUSH_BRANCH" \

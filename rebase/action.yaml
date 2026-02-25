@@ -104,7 +104,7 @@ runs:
       shell: bash
     - if: steps.command.outputs.continue == 'true' && runner.debug == '1'
       run: |
-        echo "EXTRA_FLAGS=--debug" >> "$GITHUB_ENV"
+        echo "DEBUG_FLAG=--debug" >> "$GITHUB_ENV"
       shell: bash
     - env:
         EMAIL: ${{ inputs.email }}
@@ -115,7 +115,7 @@ runs:
         steps.command.outputs.continue == 'true'
       run: |
         nix run "$REGISTRY#sapling" -- config \
-          --local ui.username "$FULLNAME <$EMAIL>" $EXTRA_FLAGS
+          --local ui.username "$FULLNAME <$EMAIL>" $DEBUG_FLAG
       shell: bash
     - id: importGPG
       if: |
@@ -137,7 +137,7 @@ runs:
       run: |
         nix run "$REGISTRY#sapling" -- config \
           --local gpg.key "$GPG_KEY_ID" \
-          --local commit.gpgsign true $EXTRA_FLAGS
+          --local commit.gpgsign true $DEBUG_FLAG
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
@@ -163,10 +163,10 @@ runs:
         steps.pull_request.outputs.method == 'ghstack' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#ghstack" -- $EXTRA_FLAGS checkout "$PR_URL"
+        nix run "$REGISTRY#ghstack" -- $DEBUG_FLAG checkout "$PR_URL"
         git fetch origin "$BASE"
         git rebase "origin/$BASE"
-        nix run "$REGISTRY#ghstack" -- $EXTRA_FLAGS submit
+        nix run "$REGISTRY#ghstack" -- $DEBUG_FLAG submit
       shell: bash
     - env:
         BASE: ${{ inputs.base }}
@@ -179,11 +179,11 @@ runs:
       run: |
         nix run "$REGISTRY#sapling" -- pr pull \
           --goto \
-          "$PR_URL" $EXTRA_FLAGS
+          "$PR_URL" $DEBUG_FLAG
         nix run "$REGISTRY#sapling" -- rebase \
-          --dest "$BASE" $EXTRA_FLAGS
+          --dest "$BASE" $DEBUG_FLAG
         nix run "$REGISTRY#sapling" -- pr \
-          submit $EXTRA_FLAGS
+          submit $DEBUG_FLAG
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}

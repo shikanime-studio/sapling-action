@@ -45,7 +45,7 @@ runs:
         pull-request-url: ${{ inputs.pull-request-url }}
     - if: steps.command.outputs.continue == 'true' && runner.debug == '1'
       run: |
-        echo "EXTRA_FLAGS=--debug" >> "$GITHUB_ENV"
+        echo "DEBUG_FLAG=--debug" >> "$GITHUB_ENV"
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
@@ -101,7 +101,7 @@ runs:
         steps.pull_request.outputs.method == 'ghstack' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#ghstack" -- $EXTRA_FLAGS action \
+        nix run "$REGISTRY#ghstack" -- $DEBUG_FLAG action \
           --close \
           "$PR_URL"
       shell: bash

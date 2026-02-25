@@ -57,7 +57,7 @@ runs:
         pull-request-url: ${{ inputs.pull-request-url }}
     - if: steps.command.outputs.continue == 'true' && runner.debug == '1'
       run: |
-        echo "EXTRA_FLAGS=--debug" >> "$GITHUB_ENV"
+        echo "DEBUG_FLAG=--debug" >> "$GITHUB_ENV"
       shell: bash
     - id: importGPG
       if: |
@@ -79,7 +79,7 @@ runs:
       run: |
         nix run "$REGISTRY#sapling" -- config \
           --local gpg.key "$GPG_KEY_ID" \
-          --local commit.gpgsign true $EXTRA_FLAGS
+          --local commit.gpgsign true $DEBUG_FLAG
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
@@ -110,11 +110,11 @@ runs:
           exit 1
         fi
 
-        nix run "$REGISTRY#ghstack" -- $EXTRA_FLAGS checkout "$PR_URL"
-        nix run "$REGISTRY#ghstack" -- $EXTRA_FLAGS unlink "$PR_URL"
+        nix run "$REGISTRY#ghstack" -- $DEBUG_FLAG checkout "$PR_URL"
+        nix run "$REGISTRY#ghstack" -- $DEBUG_FLAG unlink "$PR_URL"
         git fetch origin "$TARGET_BRANCH"
         git rebase "origin/$TARGET_BRANCH"
-        nix run "$REGISTRY#ghstack" -- $EXTRA_FLAGS submit
+        nix run "$REGISTRY#ghstack" -- $DEBUG_FLAG submit
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
@@ -132,13 +132,13 @@ runs:
 
         nix run "$REGISTRY#sapling" -- pr pull \
           --goto \
-          "$PR_URL" $EXTRA_FLAGS
+          "$PR_URL" $DEBUG_FLAG
         nix run "$REGISTRY#sapling" -- pr \
-          unlink $EXTRA_FLAGS
+          unlink $DEBUG_FLAG
         nix run "$REGISTRY#sapling" -- rebase \
-          --dest "$TARGET_BRANCH" $EXTRA_FLAGS
+          --dest "$TARGET_BRANCH" $DEBUG_FLAG
         nix run "$REGISTRY#sapling" -- pr \
-          submit $EXTRA_FLAGS
+          submit $DEBUG_FLAG
       shell: bash
     - env:
         GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
@@ -149,11 +149,11 @@ runs:
         steps.command.outputs.continue == 'true'
       run: |
         nix run "$REGISTRY#jujutsu" -- config set \
-          --repo signing.backend gpg $EXTRA_FLAGS
+          --repo signing.backend gpg $DEBUG_FLAG
         nix run "$REGISTRY#jujutsu" -- config set \
-          --repo signing.sign-all true $EXTRA_FLAGS
+          --repo signing.sign-all true $DEBUG_FLAG
         nix run "$REGISTRY#jujutsu" -- config set \
-          --repo signing.key "$GPG_KEY_ID" $EXTRA_FLAGS
+          --repo signing.key "$GPG_KEY_ID" $DEBUG_FLAG
       shell: bash
     - continue-on-error: true
       env:
@@ -163,7 +163,7 @@ runs:
         steps.command.outputs.continue == 'true'
       run: |
         nix run "$REGISTRY#jujutsu" -- git \
-          init $EXTRA_FLAGS
+          init $DEBUG_FLAG
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
@@ -181,24 +181,24 @@ runs:
         fi
 
         nix run "$REGISTRY#jujutsu" -- git fetch \
-          --remote origin $EXTRA_FLAGS
+          --remote origin $DEBUG_FLAG
 
         nix run "$REGISTRY#jujutsu" -- config set \
           --repo templates.git_push_bookmark \
-          "\"$USERNAME/push-\" ++ change_id.short()" $EXTRA_FLAGS
+          "\"$USERNAME/push-\" ++ change_id.short()" $DEBUG_FLAG
 
         nix run "$REGISTRY#jujutsu" -- new \
-          "$TARGET_BRANCH@origin" $EXTRA_FLAGS
+          "$TARGET_BRANCH@origin" $DEBUG_FLAG
         nix run "$REGISTRY#jujutsu" -- rebase \
           -b @ \
-          -o "$PR_URL" $EXTRA_FLAGS
+          -o "$PR_URL" $DEBUG_FLAG
         nix run "$REGISTRY#jujutsu" -- git push \
-          --change @ $EXTRA_FLAGS
+          --change @ $DEBUG_FLAG
 
         PUSH_BRANCH=$(nix run "$REGISTRY#jujutsu" -- log \
           --limit 1 \
           --template "{{bookmarks}}" \
-          @ $EXTRA_FLAGS)
+          @ $DEBUG_FLAG)
 
         ORIG_TITLE=$(gh pr view "$PR_URL" --json title -q .title)
         ORIG_BODY_FILE=<(gh pr view "$PR_URL" --json body -q .body)
