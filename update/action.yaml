@@ -131,8 +131,8 @@ runs:
         REGISTRY: ${{ inputs.registry }}
       if: inputs.method == 'sapling-pull-request'
       run: |
-        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- pr submit \
-          $SL_EXTRA_FLAGS
+        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- pr \
+          submit $SL_EXTRA_FLAGS
       shell: bash
     - env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
@@ -140,9 +140,8 @@ runs:
       continue-on-error: true
       if: inputs.method == 'github-pull-request'
       run: |
-        nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- git init \
-          --git-repo . \
-          --colocate $NIX_EXTRA_FLAGS
+        nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- git \
+          init $NIX_EXTRA_FLAGS
       shell: bash
     - env:
         BASE: ${{ inputs.base }}

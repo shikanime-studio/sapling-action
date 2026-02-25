@@ -141,8 +141,8 @@ runs:
           unlink $SL_EXTRA_FLAGS
         nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- rebase \
           --dest "$TARGET_BRANCH" $SL_EXTRA_FLAGS
-        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- pr submit \
-          $SL_EXTRA_FLAGS
+        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- pr \
+          submit $SL_EXTRA_FLAGS
       shell: bash
     - env:
         GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
@@ -166,9 +166,8 @@ runs:
         steps.stack.outputs.method == 'github-pull-request' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- git init \
-          --git-repo . \
-          --colocate $NIX_EXTRA_FLAGS
+        nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- git \
+          init $NIX_EXTRA_FLAGS
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
