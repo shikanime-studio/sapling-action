@@ -124,7 +124,6 @@ runs:
       shell: bash
     - env:
         EXTRA_ARGS: ${{ inputs.extra-args }}
-        GHSTACKRC_PATH: ${{ env.GHSTACKRC_PATH }}
         REGISTRY: ${{ inputs.registry }}
       if: inputs.method == 'ghstack'
       run: |

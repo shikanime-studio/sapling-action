@@ -153,7 +153,6 @@ runs:
       shell: bash
     - env:
         EXTRA_ARGS: ${{ inputs.extra-args }}
-        GHSTACKRC_PATH: ${{ env.GHSTACKRC_PATH }}
         PR_URL: ${{ inputs.pull-request-url }}
         REGISTRY: ${{ inputs.registry }}
       if: |
