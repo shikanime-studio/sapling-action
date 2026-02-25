@@ -114,7 +114,7 @@ runs:
         steps.pull_request.outputs.method == 'sapling-pull-request' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#sapling" $EXTRA_FLAGS -- config \
+        nix run "$REGISTRY#sapling" -- config \
           --local ui.username "$FULLNAME <$EMAIL>" $EXTRA_FLAGS
       shell: bash
     - id: importGPG
@@ -135,7 +135,7 @@ runs:
         steps.pull_request.outputs.method == 'sapling-pull-request' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#sapling" $EXTRA_FLAGS -- config \
+        nix run "$REGISTRY#sapling" -- config \
           --local gpg.key "$GPG_KEY_ID" \
           --local commit.gpgsign true $EXTRA_FLAGS
       shell: bash
@@ -163,11 +163,11 @@ runs:
         steps.pull_request.outputs.method == 'ghstack' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#ghstack" $EXTRA_FLAGS -- checkout \
+        nix run "$REGISTRY#ghstack" -- checkout \
           "$PR_URL" $EXTRA_FLAGS
         git fetch origin "$BASE"
         git rebase "origin/$BASE"
-        nix run "$REGISTRY#ghstack" $EXTRA_FLAGS -- submit $EXTRA_FLAGS
+        nix run "$REGISTRY#ghstack" -- submit $EXTRA_FLAGS
       shell: bash
     - env:
         BASE: ${{ inputs.base }}
@@ -178,12 +178,12 @@ runs:
         steps.pull_request.outputs.method == 'sapling-pull-request' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#sapling" $EXTRA_FLAGS -- pr pull \
+        nix run "$REGISTRY#sapling" -- pr pull \
           --goto \
           "$PR_URL" $EXTRA_FLAGS
-        nix run "$REGISTRY#sapling" $EXTRA_FLAGS -- rebase \
+        nix run "$REGISTRY#sapling" -- rebase \
           --dest "$BASE" $EXTRA_FLAGS
-        nix run "$REGISTRY#sapling" $EXTRA_FLAGS -- pr \
+        nix run "$REGISTRY#sapling" -- pr \
           submit $EXTRA_FLAGS
       shell: bash
     - env:

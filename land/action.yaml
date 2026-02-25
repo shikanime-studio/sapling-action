@@ -108,7 +108,7 @@ runs:
         steps.pull_request.outputs.method == 'sapling-pull-request' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#sapling" $EXTRA_FLAGS -- config \
+        nix run "$REGISTRY#sapling" -- config \
           --local ui.username "$FULLNAME <$EMAIL>" $EXTRA_FLAGS
       shell: bash
     - id: importGPG
@@ -129,7 +129,7 @@ runs:
         steps.pull_request.outputs.method == 'sapling-pull-request' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#sapling" $EXTRA_FLAGS -- config \
+        nix run "$REGISTRY#sapling" -- config \
           --local gpg.key "$GPG_KEY_ID" \
           --local commit.gpgsign true $EXTRA_FLAGS
       shell: bash
@@ -156,7 +156,7 @@ runs:
         steps.pull_request.outputs.method == 'ghstack' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#ghstack" $EXTRA_FLAGS -- land \
+        nix run "$REGISTRY#ghstack" -- land \
           "$PR_URL" $EXTRA_FLAGS
       shell: bash
     - env:
@@ -168,18 +168,18 @@ runs:
         steps.pull_request.outputs.method == 'sapling-pull-request' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#sapling" $EXTRA_FLAGS -- pr pull \
+        nix run "$REGISTRY#sapling" -- pr pull \
           --goto \
           "$PR_URL" $EXTRA_FLAGS
 
-        nix run "$REGISTRY#sapling" $EXTRA_FLAGS -- rebase \
+        nix run "$REGISTRY#sapling" -- rebase \
           --dest "$BASE" $EXTRA_FLAGS
 
-        nix run "$REGISTRY#sapling" $EXTRA_FLAGS -- push \
+        nix run "$REGISTRY#sapling" -- push \
           --to "$BASE" $EXTRA_FLAGS
 
         DELETE_BRANCH=$(gh pr view "$PR_URL" --json headRefName -q .headRefName)
-        nix run "$REGISTRY#sapling" $EXTRA_FLAGS -- push \
+        nix run "$REGISTRY#sapling" -- push \
           --delete $DELETE_BRANCH $EXTRA_FLAGS
       shell: bash
     - env:
