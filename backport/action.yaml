@@ -1,10 +1,6 @@
 name: backport
 description: Backport pull request from a PR comment
 inputs:
-  extra-args:
-    default: ""
-    description: Extra arguments to pass to `nix run`
-    required: false
   github-token:
     default: ${{ github.token }}
     description: The GitHub Token
@@ -59,6 +55,12 @@ runs:
       with:
         github-token: ${{ inputs.github-token }}
         pull-request-url: ${{ inputs.pull-request-url }}
+    - if: steps.command.outputs.continue == 'true' && runner.debug == '1'
+      run: |
+        echo "GHSTACK_EXTRA_FLAGS=--debug" >> "$GITHUB_ENV"
+        echo "SL_EXTRA_FLAGS=--debug" >> "$GITHUB_ENV"
+        echo "NIX_EXTRA_FLAGS=--debug" >> "$GITHUB_ENV"
+      shell: bash
     - id: importGPG
       if: |
         inputs.sign-commits == 'true' &&
@@ -70,7 +72,6 @@ runs:
         gpg_private_key: ${{ inputs.gpg-private-key }}
         passphrase: ${{ inputs.gpg-passphrase }}
     - env:
-        EXTRA_ARGS: ${{ inputs.extra-args }}
         GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
         REGISTRY: ${{ inputs.registry }}
       if: |
@@ -78,9 +79,10 @@ runs:
         steps.stack.outputs.method == 'sapling-pull-request' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- config \
+        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- config \
           --local gpg.key "$GPG_KEY_ID" \
-          --local commit.gpgsign true
+          --local commit.gpgsign true \
+          $SL_EXTRA_FLAGS
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
@@ -99,7 +101,6 @@ runs:
         echo "GHSTACKRC_PATH=$GHSTACKRC_PATH" >> "$GITHUB_ENV"
       shell: bash
     - env:
-        EXTRA_ARGS: ${{ inputs.extra-args }}
         PR_URL: ${{ inputs.pull-request-url }}
         REGISTRY: ${{ inputs.registry }}
         TARGET_BRANCH: ${{ steps.command.outputs.params }}
@@ -112,15 +113,18 @@ runs:
           exit 1
         fi
 
-        nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- checkout \
-          "$PR_URL"
-        nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- unlink
-        nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- rebase \
-          --dest "$TARGET_BRANCH"
-        nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- submit
+        nix run "$REGISTRY#ghstack" $NIX_EXTRA_FLAGS -- checkout \
+          "$PR_URL" \
+          $GHSTACK_EXTRA_FLAGS
+        nix run "$REGISTRY#ghstack" $NIX_EXTRA_FLAGS -- unlink \
+          "$PR_URL" \
+          $GHSTACK_EXTRA_FLAGS
+        git fetch origin "$BASE"
+        git rebase "origin/$BASE"
+        nix run "$REGISTRY#ghstack" $NIX_EXTRA_FLAGS -- submit \
+          $GHSTACK_EXTRA_FLAGS
       shell: bash
     - env:
-        EXTRA_ARGS: ${{ inputs.extra-args }}
         GH_TOKEN: ${{ inputs.github-token }}
         PR_URL: ${{ inputs.pull-request-url }}
         REGISTRY: ${{ inputs.registry }}
@@ -134,16 +138,19 @@ runs:
           exit 1
         fi
 
-        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- pr pull \
+        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- pr checkout \
           --goto \
-          "$PR_URL"
-        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- pr unlink
-        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- rebase \
-          --dest "$TARGET_BRANCH"
-        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- pr submit
+          "$PR_URL" \
+          $SL_EXTRA_FLAGS
+        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- pr unlink \
+          $SL_EXTRA_FLAGS
+        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- rebase \
+          --dest "$TARGET_BRANCH" \
+          $SL_EXTRA_FLAGS
+        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- pr submit \
+          $SL_EXTRA_FLAGS
       shell: bash
     - env:
-        EXTRA_ARGS: ${{ inputs.extra-args }}
         GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
         REGISTRY: ${{ inputs.registry }}
       if: |
@@ -151,27 +158,29 @@ runs:
         steps.stack.outputs.method == 'github-pull-request' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- config set \
-          --repo signing.backend gpg
-        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- config set \
-          --repo signing.sign-all true
-        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- config set \
-          --repo signing.key "$GPG_KEY_ID"
+        nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- config set \
+          --repo signing.backend gpg \
+          $NIX_EXTRA_FLAGS
+        nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- config set \
+          --repo signing.sign-all true \
+          $NIX_EXTRA_FLAGS
+        nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- config set \
+          --repo signing.key "$GPG_KEY_ID" \
+          $NIX_EXTRA_FLAGS
       shell: bash
     - continue-on-error: true
       env:
-        EXTRA_ARGS: ${{ inputs.extra-args }}
         REGISTRY: ${{ inputs.registry }}
       if: |
         steps.stack.outputs.method == 'github-pull-request' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- git init \
+        nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- git init \
           --git-repo . \
-          --colocate
+          --colocate \
+          $NIX_EXTRA_FLAGS
       shell: bash
     - env:
-        EXTRA_ARGS: ${{ inputs.extra-args }}
         GH_TOKEN: ${{ inputs.github-token }}
         PR_URL: ${{ inputs.pull-request-url }}
         REGISTRY: ${{ inputs.registry }}
@@ -186,25 +195,31 @@ runs:
           exit 1
         fi
 
-        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- git fetch \
-          --remote origin
+        nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- git fetch \
+          --remote origin \
+          $NIX_EXTRA_FLAGS
 
-        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- config set \
+        nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- config set \
           --repo templates.git_push_bookmark \
-          "\"$USERNAME/push-\" ++ change_id.short()"
+          "\"$USERNAME/push-\" ++ change_id.short()" \
+          $NIX_EXTRA_FLAGS
 
-        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- new \
-          "$TARGET_BRANCH@origin"
-        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- rebase \
+        nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- new \
+          "$TARGET_BRANCH@origin" \
+          $NIX_EXTRA_FLAGS
+        nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- rebase \
           -b @ \
-          -o "$PR_URL"
-        nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- git push \
-          --change @
+          -o "$PR_URL" \
+          $NIX_EXTRA_FLAGS
+        nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- git push \
+          --change @ \
+          $NIX_EXTRA_FLAGS
 
-        PUSH_BRANCH=$(nix run "$REGISTRY#jujutsu" $EXTRA_ARGS -- log \
+        PUSH_BRANCH=$(nix run "$REGISTRY#jujutsu" $NIX_EXTRA_FLAGS -- log \
           --limit 1 \
           --template "{{bookmarks}}" \
-          @)
+          @ \
+          $NIX_EXTRA_FLAGS)
 
         ORIG_TITLE=$(gh pr view "$PR_URL" --json title -q .title)
         ORIG_BODY_FILE=<(gh pr view "$PR_URL" --json body -q .body)

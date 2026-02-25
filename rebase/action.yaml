@@ -102,17 +102,23 @@ runs:
 
         echo "method=$METHOD" >> "$GITHUB_OUTPUT"
       shell: bash
+    - if: steps.command.outputs.continue == 'true' && runner.debug == '1'
+      run: |
+        echo "GHSTACK_EXTRA_FLAGS=--debug" >> "$GITHUB_ENV"
+        echo "SL_EXTRA_FLAGS=--debug" >> "$GITHUB_ENV"
+        echo "NIX_EXTRA_FLAGS=--debug" >> "$GITHUB_ENV"
+      shell: bash
     - env:
         EMAIL: ${{ inputs.email }}
-        EXTRA_ARGS: ${{ inputs.extra-args }}
         FULLNAME: ${{ inputs.fullname }}
         REGISTRY: ${{ inputs.registry }}
       if: |
         steps.pull_request.outputs.method == 'sapling-pull-request' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- config \
-          --local ui.username "$FULLNAME <$EMAIL>"
+        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- config \
+          --local ui.username "$FULLNAME <$EMAIL>" \
+          $SL_EXTRA_FLAGS
       shell: bash
     - id: importGPG
       if: |
@@ -125,7 +131,6 @@ runs:
         gpg_private_key: ${{ inputs.gpg-private-key }}
         passphrase: ${{ inputs.gpg-passphrase }}
     - env:
-        EXTRA_ARGS: ${{ inputs.extra-args }}
         GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
         REGISTRY: ${{ inputs.registry }}
       if: |
@@ -133,9 +138,10 @@ runs:
         steps.pull_request.outputs.method == 'sapling-pull-request' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- config \
+        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- config \
           --local gpg.key "$GPG_KEY_ID" \
-          --local commit.gpgsign true
+          --local commit.gpgsign true \
+          $SL_EXTRA_FLAGS
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
@@ -155,22 +161,22 @@ runs:
       shell: bash
     - env:
         BASE: ${{ inputs.base }}
-        EXTRA_ARGS: ${{ inputs.extra-args }}
         PR_URL: ${{ inputs.pull-request-url }}
         REGISTRY: ${{ inputs.registry }}
       if: |
         steps.pull_request.outputs.method == 'ghstack' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- checkout \
-          "$PR_URL"
+        nix run "$REGISTRY#ghstack" $NIX_EXTRA_FLAGS -- rebase \
+          "$PR_URL" \
+          $GHSTACK_EXTRA_FLAGS
         git fetch origin "$BASE"
         git rebase "origin/$BASE"
-        nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- submit
+        nix run "$REGISTRY#ghstack" $NIX_EXTRA_FLAGS -- submit \
+          $GHSTACK_EXTRA_FLAGS
       shell: bash
     - env:
         BASE: ${{ inputs.base }}
-        EXTRA_ARGS: ${{ inputs.extra-args }}
         GH_TOKEN: ${{ inputs.github-token }}
         PR_URL: ${{ inputs.pull-request-url }}
         REGISTRY: ${{ inputs.registry }}
@@ -178,12 +184,15 @@ runs:
         steps.pull_request.outputs.method == 'sapling-pull-request' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- pr checkout \
+        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- pr checkout \
           --goto \
-          "$PR_URL"
-        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- rebase \
-          --dest "$BASE"
-        nix run "$REGISTRY#sapling" $EXTRA_ARGS -- pr submit
+          "$PR_URL" \
+          $SL_EXTRA_FLAGS
+        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- rebase \
+          --dest "$BASE" \
+          $SL_EXTRA_FLAGS
+        nix run "$REGISTRY#sapling" $NIX_EXTRA_FLAGS -- pr submit \
+          $SL_EXTRA_FLAGS
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
