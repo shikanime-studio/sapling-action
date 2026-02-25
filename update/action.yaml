@@ -122,7 +122,7 @@ runs:
         REGISTRY: ${{ inputs.registry }}
       if: inputs.method == 'ghstack'
       run: |
-        nix run "$REGISTRY#ghstack" -- submit $EXTRA_FLAGS
+        nix run "$REGISTRY#ghstack" -- $EXTRA_FLAGS submit
       shell: bash
     - env:
         GITHUB_TOKEN: ${{ inputs.github-token }}

@@ -156,8 +156,7 @@ runs:
         steps.pull_request.outputs.method == 'ghstack' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#ghstack" -- land \
-          "$PR_URL" $EXTRA_FLAGS
+        nix run "$REGISTRY#ghstack" -- $EXTRA_FLAGS land "$PR_URL"
       shell: bash
     - env:
         BASE: ${{ inputs.base }}

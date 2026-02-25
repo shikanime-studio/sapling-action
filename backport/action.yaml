@@ -110,13 +110,11 @@ runs:
           exit 1
         fi
 
-        nix run "$REGISTRY#ghstack" -- checkout \
-          "$PR_URL" $EXTRA_FLAGS
-        nix run "$REGISTRY#ghstack" -- unlink \
-          "$PR_URL" $EXTRA_FLAGS
-        git fetch origin "$BASE"
-        git rebase "origin/$BASE"
-        nix run "$REGISTRY#ghstack" -- submit $EXTRA_FLAGS
+        nix run "$REGISTRY#ghstack" -- $EXTRA_FLAGS checkout "$PR_URL"
+        nix run "$REGISTRY#ghstack" -- $EXTRA_FLAGS unlink "$PR_URL"
+        git fetch origin "$TARGET_BRANCH"
+        git rebase "origin/$TARGET_BRANCH"
+        nix run "$REGISTRY#ghstack" -- $EXTRA_FLAGS submit
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}

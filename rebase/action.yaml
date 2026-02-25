@@ -163,11 +163,10 @@ runs:
         steps.pull_request.outputs.method == 'ghstack' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#ghstack" -- checkout \
-          "$PR_URL" $EXTRA_FLAGS
+        nix run "$REGISTRY#ghstack" -- $EXTRA_FLAGS checkout "$PR_URL"
         git fetch origin "$BASE"
         git rebase "origin/$BASE"
-        nix run "$REGISTRY#ghstack" -- submit $EXTRA_FLAGS
+        nix run "$REGISTRY#ghstack" -- $EXTRA_FLAGS submit
       shell: bash
     - env:
         BASE: ${{ inputs.base }}

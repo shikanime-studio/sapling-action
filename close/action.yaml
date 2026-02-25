@@ -101,9 +101,9 @@ runs:
         steps.pull_request.outputs.method == 'ghstack' &&
         steps.command.outputs.continue == 'true'
       run: |
-        nix run "$REGISTRY#ghstack" -- action \
+        nix run "$REGISTRY#ghstack" -- $EXTRA_FLAGS action \
           --close \
-          "$PR_URL" $EXTRA_FLAGS
+          "$PR_URL"
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
