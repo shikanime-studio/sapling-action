@@ -109,22 +109,25 @@ runs:
           --message "$COMMIT_MESSAGE"
       shell: bash
     - env:
-        EXTRA_ARGS: ${{ inputs.extra-args }}
         GH_TOKEN: ${{ inputs.github-token }}
-        GITHUB_TOKEN: ${{ inputs.github-token }}
-        REGISTRY: ${{ inputs.registry }}
         USERNAME: ${{ inputs.username }}
       if: inputs.method == 'ghstack'
       run: |
         GHSTACKRC_PATH=$(mktemp)
-        trap 'rm -f "$GHSTACKRC_PATH"' EXIT
         cat > "$GHSTACKRC_PATH" <<EOF
         [ghstack]
         github_url = github.com
         github_oauth = $GH_TOKEN
         github_username = $USERNAME
         EOF
-
+        echo "GHSTACKRC_PATH=$GHSTACKRC_PATH" >> "$GITHUB_ENV"
+      shell: bash
+    - env:
+        EXTRA_ARGS: ${{ inputs.extra-args }}
+        GHSTACKRC_PATH: ${{ env.GHSTACKRC_PATH }}
+        REGISTRY: ${{ inputs.registry }}
+      if: inputs.method == 'ghstack'
+      run: |
         nix run "$REGISTRY#ghstack" $EXTRA_ARGS -- submit
       shell: bash
     - env:
