@@ -29,7 +29,7 @@ runs:
   using: composite
   steps:
     - id: command
-      uses: github/command@v1
+      uses: github/command@v2
       with:
         allowed_contexts: pull_request
         command: .close
