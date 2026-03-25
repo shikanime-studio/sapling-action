@@ -1,0 +1,63 @@
+name: Setup Packages
+description: Generate matrix for Nix packages on Linux systems
+inputs:
+  registry:
+    default: nixpkgs
+    description: Nix registry to use
+    required: false
+  systems:
+    default: |
+      {
+        "ubuntu-latest": ["x86_64-linux"],
+        "ubuntu-24.04-arm": ["aarch64-linux", "armv6l-linux", "armv7l-linux"]
+      }
+    description: Runner to systems mapping
+    required: false
+  excludes:
+    default: '["devenv-up", "devenv-test"]'
+    description: Packages to exclude
+    required: false
+outputs:
+  continue:
+    description: Whether any Linux packages exist
+    value: ${{ steps.matrix.outputs.continue }}
+  matrix:
+    description: JSON array of matrix entries
+    value: ${{ steps.matrix.outputs.matrix }}
+runs:
+  using: composite
+  steps:
+    - id: matrix
+      env:
+        REGISTRY: ${{ inputs.registry }}
+        SYSTEMS: ${{ inputs.systems }}
+        EXCLUDES: ${{ inputs.excludes }}
+      run: |
+        JSON="$(nix flake show --json --all-systems --accept-flake-config --no-pure-eval)"
+        MATRIX="$(
+          nix run "$REGISTRY#jq" -- -c '
+            .packages
+            | to_entries
+            | (env.SYSTEMS | fromjson) as $systems
+            | ($systems | to_entries) as $pairs
+            | ($pairs
+               | reduce .[] as $p ({}; . + ($p.value | reduce .[] as $s (.; . + {($s): $p.key})))
+              ) as $sys2runner
+            | map(select(.key as $s | $sys2runner | has($s)))
+            | reduce .[] as $entry ([]; . += (
+                  ( ($entry.value | keys)
+                    | (env.EXCLUDES | fromjson) as $excludes
+                    | map(select(. as $name | $excludes | index($name) | not))
+                  )
+                  | map({
+                      system: $entry.key,
+                      runner: ($sys2runner[$entry.key] // "ubuntu-latest"),
+                      name: .
+                    })
+                ))
+          ' <<< "$JSON"
+        )"
+        echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+        continue=$([ "$MATRIX" = "[]" ] && echo "false" || echo "true")
+        echo "continue=$continue" >> "$GITHUB_OUTPUT"
+      shell: bash
