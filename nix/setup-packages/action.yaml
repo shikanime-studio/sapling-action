@@ -33,31 +33,31 @@ runs:
         SYSTEMS: ${{ inputs.systems }}
         EXCLUDES: ${{ inputs.excludes }}
       run: |
-        matrix="$(
-          nix flake show --json --all-systems --accept-flake-config --no-pure-eval \
-            | nix run "$REGISTRY#jq" -- -c '
-              .packages
-              | to_entries
-              | (env.SYSTEMS | fromjson) as $systems
-              | ($systems | to_entries) as $pairs
-              | ($pairs
-                 | reduce .[] as $p ({}; . + ($p.value | reduce .[] as $s (.; . + {($s): $p.key})))
-                ) as $sys2runner
-              | map(select(.key as $s | $sys2runner | has($s)))
-              | reduce .[] as $entry ([]; . += (
-                    ( ($entry.value | keys)
-                      | (env.EXCLUDES | fromjson) as $excludes
-                      | map(select(. as $name | $excludes | index($name) | not))
-                    )
-                    | map({
-                        system: $entry.key,
-                        runner: ($sys2runner[$entry.key] // "ubuntu-latest"),
-                        name: .
-                      })
-                  ))
-            '
+        JSON="$(nix flake show --json --all-systems --accept-flake-config --no-pure-eval)"
+        MATRIX="$(
+          nix run "$REGISTRY#jq" -- -c '
+            .packages
+            | to_entries
+            | (env.SYSTEMS | fromjson) as $systems
+            | ($systems | to_entries) as $pairs
+            | ($pairs
+               | reduce .[] as $p ({}; . + ($p.value | reduce .[] as $s (.; . + {($s): $p.key})))
+              ) as $sys2runner
+            | map(select(.key as $s | $sys2runner | has($s)))
+            | reduce .[] as $entry ([]; . += (
+                  ( ($entry.value | keys)
+                    | (env.EXCLUDES | fromjson) as $excludes
+                    | map(select(. as $name | $excludes | index($name) | not))
+                  )
+                  | map({
+                      system: $entry.key,
+                      runner: ($sys2runner[$entry.key] // "ubuntu-latest"),
+                      name: .
+                    })
+                ))
+          ' <<< "$JSON"
         )"
-        echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
-        continue=$([ "$matrix" = "[]" ] && echo "false" || echo "true")
+        echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+        continue=$([ "$MATRIX" = "[]" ] && echo "false" || echo "true")
         echo "continue=$continue" >> "$GITHUB_OUTPUT"
       shell: bash
