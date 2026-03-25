@@ -11,7 +11,7 @@ inputs:
         "ubuntu-latest": ["x86_64-linux"],
         "ubuntu-24.04-arm": ["aarch64-linux", "armv6l-linux", "armv7l-linux"]
       }
-    description: Runner-to-systems mapping (JSON map: {runner: [systems...]}).
+    description: Runner to systems mapping
     required: false
 runs:
   using: composite
