@@ -73,5 +73,4 @@ runs:
           PARENT_PR_URL=$(echo "$STATUS_JSON" | jq -r .url)
           echo "parent-pull-request-url=$PARENT_PR_URL" >> "$GITHUB_OUTPUT"
         fi
-
       shell: bash
