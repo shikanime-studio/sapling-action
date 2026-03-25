@@ -156,6 +156,7 @@ runs:
         steps.pull_request.outputs.method == 'ghstack' &&
         steps.command.outputs.continue == 'true'
       run: |
+        nix run "$REGISTRY#ghstack" -- $DEBUG_FLAG checkout "$PR_URL"
         nix run "$REGISTRY#ghstack" -- $DEBUG_FLAG land "$PR_URL"
       shell: bash
     - env:
