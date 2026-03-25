@@ -1,0 +1,50 @@
+name: Setup Checks
+description: Generate matrix for Nix checks on Linux systems
+inputs:
+  registry:
+    default: nixpkgs
+    description: Nix registry to use
+    required: false
+  systems:
+    default: |
+      {
+        "ubuntu-latest": ["x86_64-linux"],
+        "ubuntu-24.04-arm": ["aarch64-linux", "armv6l-linux", "armv7l-linux"]
+      }
+    description: Runner to systems mapping
+    required: false
+runs:
+  using: composite
+  steps:
+    - id: matrix
+      env:
+        REGISTRY: ${{ inputs.registry }}
+        SYSTEMS: ${{ inputs.systems }}
+      run: |
+        JSON="$(nix flake show --json --all-systems --accept-flake-config --no-pure-eval)"
+        MATRIX="$(
+          nix run "$REGISTRY#jq" -- -c '
+            .checks as $root
+            | ($root | keys) as $available
+            | (env.SYSTEMS | fromjson) as $systems
+            | ($systems | to_entries)
+            | map(. as $pair
+                  | ($pair.value
+                     | map(select(. as $s | $available | index($s)))
+                     | map({system: ., runner: $pair.key})
+                    )
+                )
+            | flatten
+          ' <<< "$JSON"
+        )"
+        echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+        continue=$([ "$MATRIX" = "[]" ] && echo "false" || echo "true")
+        echo "continue=$continue" >> "$GITHUB_OUTPUT"
+      shell: bash
+outputs:
+  continue:
+    description: Whether any Linux checks/packages exist
+    value: ${{ steps.matrix.outputs.continue }}
+  matrix:
+    description: JSON array of matrix entries
+    value: ${{ steps.matrix.outputs.matrix }}
