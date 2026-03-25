@@ -41,7 +41,7 @@ runs:
             | (env.SYSTEMS | fromjson) as $systems
             | ($systems | to_entries) as $pairs
             | ($pairs
-               | reduce .[] as $p ({}; . + ($p.value | reduce .[] as $s (.; . + {($s): $p.key})))
+               | reduce .[] as $p ({}; . + ($p.value | reduce .[] as $s ({}; . + {($s): $p.key})))
               ) as $sys2runner
             | map(select(.key as $s | $sys2runner | has($s)))
             | reduce .[] as $entry ([]; . += (
