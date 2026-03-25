@@ -39,7 +39,9 @@ permissions:
   pull-requests: write
 jobs:
   land:
-    if: github.event.issue.pull_request != null && contains(github.event.comment.body, '.land')
+    if: >-
+      github.event.issue.pull_request != null &&
+      contains(github.event.comment.body, '.land')
     runs-on: ubuntu-slim
     steps:
       - continue-on-error: true
@@ -54,21 +56,29 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          token: >-
+            ${{ steps.createGithubAppToken.outputs.token
+                || secrets.GITHUB_TOKEN }}
       - uses: cachix/install-nix-action@v31
         with:
-          github_access_token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          github_access_token: >-
+            ${{ steps.createGithubAppToken.outputs.token
+                || secrets.GITHUB_TOKEN }}
       - uses: shikanime-studio/actions/land@v7
         with:
           email: operator6o@shikanime.studio
           fullname: Operator 6O
-          github-token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          github-token: >-
+            ${{ steps.createGithubAppToken.outputs.token
+                || secrets.GITHUB_TOKEN }}
           gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           sign-commits: true
           username: operator6o
   rebase:
-    if: github.event.issue.pull_request != null && contains(github.event.comment.body, '.rebase')
+    if: >-
+      github.event.issue.pull_request != null &&
+      contains(github.event.comment.body, '.rebase')
     runs-on: ubuntu-slim
     steps:
       - continue-on-error: true
@@ -83,21 +93,29 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          token: >-
+            ${{ steps.createGithubAppToken.outputs.token
+                || secrets.GITHUB_TOKEN }}
       - uses: cachix/install-nix-action@v31
         with:
-          github_access_token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          github_access_token: >-
+            ${{ steps.createGithubAppToken.outputs.token
+                || secrets.GITHUB_TOKEN }}
       - uses: shikanime-studio/actions/rebase@v7
         with:
           email: operator6o@shikanime.studio
           fullname: Operator 6O
-          github-token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          github-token: >-
+            ${{ steps.createGithubAppToken.outputs.token
+                || secrets.GITHUB_TOKEN }}
           gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           sign-commits: true
           username: operator6o
   close:
-    if: github.event.issue.pull_request != null && contains(github.event.comment.body, '.close')
+    if: >-
+      github.event.issue.pull_request != null &&
+      contains(github.event.comment.body, '.close')
     runs-on: ubuntu-slim
     steps:
       - continue-on-error: true
@@ -112,16 +130,24 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          token: >-
+            ${{ steps.createGithubAppToken.outputs.token
+                || secrets.GITHUB_TOKEN }}
       - uses: cachix/install-nix-action@v31
         with:
-          github_access_token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          github_access_token: >-
+            ${{ steps.createGithubAppToken.outputs.token
+                || secrets.GITHUB_TOKEN }}
       - uses: shikanime-studio/actions/close@v7
         with:
-          github-token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          github-token: >-
+            ${{ steps.createGithubAppToken.outputs.token
+                || secrets.GITHUB_TOKEN }}
           username: operator6o
   backport:
-    if: github.event.issue.pull_request != null && contains(github.event.comment.body, '.backport')
+    if: >-
+      github.event.issue.pull_request != null &&
+      contains(github.event.comment.body, '.backport')
     runs-on: ubuntu-slim
     steps:
       - continue-on-error: true
@@ -136,16 +162,94 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          token: >-
+            ${{ steps.createGithubAppToken.outputs.token
+                || secrets.GITHUB_TOKEN }}
       - uses: cachix/install-nix-action@v31
         with:
-          github_access_token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          github_access_token: >-
+            ${{ steps.createGithubAppToken.outputs.token
+                || secrets.GITHUB_TOKEN }}
       - uses: shikanime-studio/actions/backport@v7
         with:
-          github-token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          github-token: >-
+            ${{ steps.createGithubAppToken.outputs.token
+                || secrets.GITHUB_TOKEN }}
           gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           sign-commits: true
+```
+
+## Nix Matrix Actions
+
+Use the composite actions to generate matrices for checks and packages.
+
+```yaml
+jobs:
+  setup-checks:
+    runs-on: ubuntu-latest
+    outputs:
+      continue: ${{ steps.matrix.outputs.continue }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - id: matrix
+        uses: ./nix/setup-checks
+        with:
+          systems: >-
+            {
+              "ubuntu-latest": ["x86_64-linux"],
+              "ubuntu-24.04-arm": [
+                "aarch64-linux",
+                "armv6l-linux",
+                "armv7l-linux"
+              ]
+            }
+
+  checks:
+    needs: [setup-checks]
+    if: needs.setup-checks.outputs.continue == 'true'
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: >-
+          ${{ fromJSON(needs.setup-checks.outputs.matrix) }}
+    steps:
+      - run: nix flake check \
+          --accept-flake-config \
+          --no-pure-eval \
+          --system "${{ matrix.system }}"
+
+  setup-packages:
+    runs-on: ubuntu-latest
+    outputs:
+      continue: ${{ steps.matrix.outputs.continue }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - id: matrix
+        uses: ./nix/setup-packages
+        with:
+          systems: >-
+            {
+              "ubuntu-latest": ["x86_64-linux"],
+              "ubuntu-24.04-arm": ["aarch64-linux"]
+            }
+          excludes: '["devenv-up","devenv-test"]'
+
+  packages:
+    needs: [setup-packages]
+    if: needs.setup-packages.outputs.continue == 'true'
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: >-
+          ${{ fromJSON(needs.setup-packages.outputs.matrix) }}
+    steps:
+      - run: nix build \
+          --accept-flake-config \
+          --no-pure-eval \
+          ".#packages.${{ matrix.system }}.${{ matrix.name }}"
 ```
 
 To automate dependency updates and repository hygiene, you can also add a
@@ -173,10 +277,14 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          token: >-
+            ${{ steps.createGithubAppToken.outputs.token
+                || secrets.GITHUB_TOKEN }}
       - uses: cachix/install-nix-action@v31
         with:
-          github_access_token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          github_access_token: >-
+            ${{ steps.createGithubAppToken.outputs.token
+                || secrets.GITHUB_TOKEN }}
       - uses: shikanime-studio/actions/update@v7
         with:
           gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
@@ -198,7 +306,9 @@ jobs:
         with:
           days-before-close: 14
           days-before-stale: 30
-          repo-token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          repo-token: >-
+            ${{ steps.createGithubAppToken.outputs.token
+                || secrets.GITHUB_TOKEN }}
 ```
 
 To automatically delete branches after a pull request is merged or closed, add a
@@ -224,6 +334,8 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          token: >-
+            ${{ steps.createGithubAppToken.outputs.token
+                || secrets.GITHUB_TOKEN }}
       - uses: shikanime-studio/actions/cleanup@v7
 ```
