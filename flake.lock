@@ -168,11 +168,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1774460446,
-        "narHash": "sha256-IQLkkAshgz702SRH53oULxrA4rUIO3iYY6fYLoRJGNY=",
+        "lastModified": 1774760959,
+        "narHash": "sha256-Na8VabgbK4v9q/GJXq+B0juMRjjyPuevLwgCiua8Mak=",
         "owner": "cachix",
         "repo": "devenv",
-        "rev": "264820d0a8ad656d717946d8e1b0a4b1bf9fb4ac",
+        "rev": "702d6e11c667f130125413486577cfedddbe7e06",
         "type": "github"
       },
       "original": {
@@ -200,11 +200,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1774464379,
-        "narHash": "sha256-4ZdhUrtmX5UtdpnqMtkDOagsarRkk86noOU0DuXb89E=",
+        "lastModified": 1774704847,
+        "narHash": "sha256-aTMA1V/M5xZnk5eNwa6arJwcC3/Told/meVIzvQsOKU=",
         "owner": "shikanime-studio",
         "repo": "devlib",
-        "rev": "f020b099e0524edf14b28e36b1b8d287c9107a98",
+        "rev": "5b7a6b1199077e62658408fc5252e99ffbd428d3",
         "type": "github"
       },
       "original": {
@@ -732,11 +732,11 @@
     },
     "nixpkgs_4": {
       "locked": {
-        "lastModified": 1774273680,
-        "narHash": "sha256-a++tZ1RQsDb1I0NHrFwdGuRlR5TORvCEUksM459wKUA=",
+        "lastModified": 1774610258,
+        "narHash": "sha256-HaThtroVD9wRdx7KQk0B75JmFcXlMUoEdDFNOMOlsOs=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "fdc7b8f7b30fdbedec91b71ed82f36e1637483ed",
+        "rev": "832efc09b4caf6b4569fbf9dc01bec3082a00611",
         "type": "github"
       },
       "original": {
