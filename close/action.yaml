@@ -21,7 +21,7 @@ runs:
   using: composite
   steps:
     - id: stack
-      uses: shikanime-studio/actions/stack@main
+      uses: shikanime-studio/actions/stack@v8
       with:
         github-token: ${{ inputs.github-token }}
         pull-request-url: ${{ inputs.pull-request-url }}
