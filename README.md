@@ -16,7 +16,6 @@ App token, configure repository permissions accordingly:
 - Backport: contents: write, pull-requests: write, issues: write
 - Update: contents: write, pull-requests: write, issues: write
 - Cleanup: contents: write
-- Run: actions: write, issues: write, pull-requests: read
 
 Permissions can be configured at the workflow level or per job. The examples
 below set them at the workflow level and request matching scopes from the
@@ -251,44 +250,6 @@ jobs:
           --accept-flake-config \
           --no-pure-eval \
           ".#packages.${{ matrix.system }}.${{ matrix.name }}"
-```
-
-## Run Workflow
-
-Trigger a workflow dispatch from a PR comment:
-
-- Comment format: `.run | <workflow>`
-- `<workflow>` can be a workflow name or a workflow file path.
-- The target workflow must have `workflow_dispatch` enabled.
-- The job token needs `actions: write`.
-
-Example job:
-
-```yaml
-  run:
-    if: >-
-      github.event.issue.pull_request != null &&
-      contains(github.event.comment.body, '.run')
-    permissions:
-      actions: write
-      issues: write
-      pull-requests: read
-    runs-on: ubuntu-slim
-    steps:
-      - continue-on-error: true
-        id: createGithubAppToken
-        uses: actions/create-github-app-token@v3
-        with:
-          app-id: ${{ vars.OPERATOR_APP_ID }}
-          permission-actions: write
-          permission-issues: write
-          permission-pull-requests: read
-          private-key: ${{ secrets.OPERATOR_PRIVATE_KEY }}
-      - uses: shikanime-studio/actions/run@main
-        with:
-          github-token: >-
-            ${{ steps.createGithubAppToken.outputs.token
-                || secrets.GITHUB_TOKEN }}
 ```
 
 To automate dependency updates and repository hygiene, you can also add a
