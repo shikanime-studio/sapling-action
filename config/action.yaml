@@ -1,0 +1,99 @@
+name: Config
+description: Configure tooling for subsequent steps
+inputs:
+  method:
+    default: github-pull-request
+    description: One of 'ghstack', 'sapling-pull-request', or 'github-pull-request'
+    required: false
+  email:
+    default: github-actions[bot]@users.noreply.github.com
+    description: Email for sapling identity
+    required: false
+  fullname:
+    default: github-actions[bot]
+    description: Full name for sapling identity
+    required: false
+  github-token:
+    default: ${{ github.token }}
+    description: The GitHub Token
+    required: false
+  github-url:
+    default: github.com
+    description: GitHub host for ghstack
+    required: false
+  gpg-passphrase:
+    default: ""
+    description: GPG private key passphrase
+    required: false
+  gpg-private-key:
+    default: ""
+    description: GPG private key for signing commits
+    required: false
+  registry:
+    default: nixpkgs
+    description: Nix registry to use
+    required: false
+  sign-commits:
+    default: "false"
+    description: Set to true to sign commits with GPG
+    required: false
+  username:
+    default: github-actions
+    description: Username for ghstack and jj push bookmark template
+    required: false
+runs:
+  using: composite
+  steps:
+    - id: importGPG
+      if: ${{ (inputs.sign-commits == 'true' || inputs.sign-commits == true) && (inputs.method == 'sapling-pull-request' || inputs.method == 'github-pull-request') }}
+      uses: crazy-max/ghaction-import-gpg@v7
+      with:
+        git_commit_gpgsign: true
+        git_user_signingkey: true
+        gpg_private_key: ${{ inputs.gpg-private-key }}
+        passphrase: ${{ inputs.gpg-passphrase }}
+    - env:
+        EMAIL: ${{ inputs.email }}
+        FULLNAME: ${{ inputs.fullname }}
+        REGISTRY: ${{ inputs.registry }}
+      if: inputs.method == 'sapling-pull-request'
+      run: |
+        nix run "$REGISTRY#sapling" -- config \
+          --local ui.username "$FULLNAME <$EMAIL>" $DEBUG_FLAG
+      shell: bash
+    - env:
+        GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
+        REGISTRY: ${{ inputs.registry }}
+      if: ${{ inputs.method == 'sapling-pull-request' && (inputs.sign-commits == 'true' || inputs.sign-commits == true) }}
+      run: |
+        nix run "$REGISTRY#sapling" -- config \
+          --local gpg.key "$GPG_KEY_ID" \
+          --local commit.gpgsign true $DEBUG_FLAG
+      shell: bash
+    - env:
+        GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
+        REGISTRY: ${{ inputs.registry }}
+      if: ${{ inputs.method == 'github-pull-request' && (inputs.sign-commits == 'true' || inputs.sign-commits == true) }}
+      run: |
+        nix run "$REGISTRY#jujutsu" -- config set \
+          --repo signing.backend gpg $DEBUG_FLAG
+        nix run "$REGISTRY#jujutsu" -- config set \
+          --repo signing.sign-all true $DEBUG_FLAG
+        nix run "$REGISTRY#jujutsu" -- config set \
+          --repo signing.key "$GPG_KEY_ID" $DEBUG_FLAG
+      shell: bash
+    - env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        GITHUB_URL: ${{ inputs.github-url }}
+        USERNAME: ${{ inputs.username }}
+      if: inputs.method == 'ghstack'
+      run: |
+        GHSTACKRC_PATH=$(mktemp)
+        cat > "$GHSTACKRC_PATH" <<EOF
+        [ghstack]
+        github_url = $GITHUB_URL
+        github_oauth = $GH_TOKEN
+        github_username = $USERNAME
+        EOF
+        echo "GHSTACKRC_PATH=$GHSTACKRC_PATH" >> "$GITHUB_ENV"
+      shell: bash
