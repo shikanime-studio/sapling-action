@@ -23,9 +23,9 @@ GitHub App via actions/create-github-app-token.
 
 ## Workflow Configuration
 
-Add a workflow like the following to `.github/workflows/command.yaml` to wire
-comment-driven command to their corresponding actions. This example reflects
-the current setup used in `.github/workflows/command.yaml`:
+Add a workflow like the following to `.github/workflows/commands.yaml` to wire
+comment-driven commands to their corresponding actions. This example reflects
+the current setup used in `.github/workflows/commands.yaml`:
 
 ```yaml
 name: Command
