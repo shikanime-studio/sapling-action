@@ -65,7 +65,7 @@ jobs:
           github_access_token: >-
             ${{ steps.createGithubAppToken.outputs.token
                 || secrets.GITHUB_TOKEN }}
-      - uses: shikanime-studio/actions/land@v7
+      - uses: shikanime-studio/actions/commands/land@main
         with:
           email: operator6o@shikanime.studio
           fullname: Operator 6O
@@ -102,7 +102,7 @@ jobs:
           github_access_token: >-
             ${{ steps.createGithubAppToken.outputs.token
                 || secrets.GITHUB_TOKEN }}
-      - uses: shikanime-studio/actions/rebase@v7
+      - uses: shikanime-studio/actions/commands/rebase@main
         with:
           email: operator6o@shikanime.studio
           fullname: Operator 6O
@@ -139,7 +139,7 @@ jobs:
           github_access_token: >-
             ${{ steps.createGithubAppToken.outputs.token
                 || secrets.GITHUB_TOKEN }}
-      - uses: shikanime-studio/actions/close@v7
+      - uses: shikanime-studio/actions/commands/close@main
         with:
           github-token: >-
             ${{ steps.createGithubAppToken.outputs.token
@@ -171,7 +171,7 @@ jobs:
           github_access_token: >-
             ${{ steps.createGithubAppToken.outputs.token
                 || secrets.GITHUB_TOKEN }}
-      - uses: shikanime-studio/actions/backport@v7
+      - uses: shikanime-studio/actions/commands/backport@main
         with:
           github-token: >-
             ${{ steps.createGithubAppToken.outputs.token
@@ -284,7 +284,7 @@ Example job:
           permission-issues: write
           permission-pull-requests: read
           private-key: ${{ secrets.OPERATOR_PRIVATE_KEY }}
-      - uses: shikanime-studio/actions/run@main
+      - uses: shikanime-studio/actions/commands/run@main
         with:
           github-token: >-
             ${{ steps.createGithubAppToken.outputs.token

@@ -11,27 +11,27 @@ then trigger via PR comments.
     stack or an explicit param.
   - Usage: `.land` or `.land | ghstack|slpr|ghpr`
   - Permissions: contents: write, issues: write, pull-requests: write
-  - Action: `shikanime-studio/actions/land`
+  - Action: `shikanime-studio/actions/commands/land`
 
 - .rebase
   - Rebases the current PR on its base branch.
   - Usage: `.rebase`
   - Permissions: contents: write, issues: write
-  - Action: `shikanime-studio/actions/rebase`
+  - Action: `shikanime-studio/actions/commands/rebase`
 
 - .close
   - Closes the current PR and optionally cleans up remote branches,
     depending on stack method.
   - Usage: `.close`
   - Permissions: pull-requests: write, contents: write, issues: write
-  - Action: `shikanime-studio/actions/close`
+  - Action: `shikanime-studio/actions/commands/close`
 
 - .backport
   - Backports the current PR onto a target branch. Supports ghstack,
     sapling PRs, and GitHub PRs.
   - Usage: `.backport | <target-branch>`
   - Permissions: contents: write, pull-requests: write, issues: write
-  - Action: `shikanime-studio/actions/backport`
+  - Action: `shikanime-studio/actions/commands/backport`
 
 - .run
   - Triggers a workflow dispatch on the same repository using GitHub CLI.
@@ -39,7 +39,7 @@ then trigger via PR comments.
   - Notes: The target workflow must have `workflow_dispatch` enabled.
     Runs against the PR head ref.
   - Permissions: actions: write (plus minimal read on contents/PRs)
-  - Action: `shikanime-studio/actions/run`
+  - Action: `shikanime-studio/actions/commands/run`
 
 ## Non-Comment Workflows
 

@@ -73,6 +73,11 @@
         { config, ... }:
         {
           devenv.shells.default = {
+            devenv.root =
+              let
+                pwd = builtins.getEnv "PWD";
+              in
+              if pwd != "" then pwd else builtins.toString ./.;
             imports = [
               devlib.devenvModules.git
               devlib.devenvModules.nix

@@ -1,36 +1,21 @@
 name: run
-description: Trigger a workflow dispatch from a PR comment
+description: Trigger a workflow dispatch on a pull request head ref
 inputs:
   github-token:
     default: ${{ github.token }}
     description: The GitHub Token
     required: false
-  permissions:
-    default: write,maintain,admin
-    description: Permissions to require for the command
-    required: false
   pull-request-url:
-    default: ${{ github.event.issue.pull_request.html_url }}
+    default: ${{ github.event.pull_request.html_url || github.event.issue.pull_request.html_url }}
     description: The Pull Request URL
     required: false
-  reaction:
-    default: rocket
-    description: Reaction to add to the triggering comment
-    required: false
+  workflow:
+    description: Workflow name or path to run (must support workflow_dispatch)
+    required: true
 runs:
   using: composite
   steps:
-    - id: command
-      uses: github/command@v2
-      with:
-        allowed_contexts: pull_request
-        command: .run
-        github_token: ${{ inputs.github-token }}
-        permissions: ${{ inputs.permissions }}
-        reaction: ${{ inputs.reaction }}
-        skip_ci: true
     - id: stack
-      if: steps.command.outputs.continue == 'true'
       uses: shikanime-studio/actions/stack@main
       with:
         github-token: ${{ inputs.github-token }}
@@ -39,13 +24,8 @@ runs:
         GH_REPO: ${{ github.repository }}
         GH_TOKEN: ${{ inputs.github-token }}
         REF: ${{ steps.stack.outputs.head-ref }}
-        WORKFLOW: ${{ steps.command.outputs.params }}
-      if: steps.command.outputs.continue == 'true'
+        WORKFLOW: ${{ inputs.workflow }}
       run: |
-        if [ -z "$WORKFLOW" ]; then
-          echo "Error: workflow name is required, e.g. '.run | Update' or '.run | .github/workflows/update.yaml'"
-          exit 1
-        fi
         if [ -z "$REF" ]; then
           echo "Error: could not determine PR head ref"
           exit 1

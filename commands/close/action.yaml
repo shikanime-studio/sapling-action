@@ -1,0 +1,46 @@
+name: commands/close
+description: Close pull request from a PR comment
+inputs:
+  github-token:
+    default: ${{ github.token }}
+    description: The GitHub Token
+    required: false
+  permissions:
+    default: write,maintain,admin
+    description: Permissions to require for the command
+    required: false
+  pull-request-url:
+    default: ${{ github.event.issue.pull_request.html_url }}
+    description: The Pull Request URL
+    required: false
+  reaction:
+    default: rocket
+    description: Reaction to add to the triggering comment
+    required: false
+  registry:
+    default: nixpkgs
+    description: Nix registry to use
+    required: false
+  username:
+    default: github-actions
+    description: Username
+    required: false
+runs:
+  using: composite
+  steps:
+    - id: command
+      uses: github/command@v2
+      with:
+        allowed_contexts: pull_request
+        command: .close
+        github_token: ${{ inputs.github-token }}
+        permissions: ${{ inputs.permissions }}
+        reaction: ${{ inputs.reaction }}
+        skip_ci: true
+    - if: steps.command.outputs.continue == 'true'
+      uses: shikanime-studio/actions/close@main
+      with:
+        github-token: ${{ inputs.github-token }}
+        pull-request-url: ${{ inputs.pull-request-url }}
+        registry: ${{ inputs.registry }}
+        username: ${{ inputs.username }}

@@ -1,21 +1,13 @@
 name: close
-description: Close pull request from a PR comment
+description: Close a pull request
 inputs:
   github-token:
     default: ${{ github.token }}
     description: The GitHub Token
     required: false
-  permissions:
-    default: write,maintain,admin
-    description: Permissions to require for the command
-    required: false
   pull-request-url:
-    default: ${{ github.event.issue.pull_request.html_url }}
+    default: ${{ github.event.pull_request.html_url || github.event.issue.pull_request.html_url }}
     description: The Pull Request URL
-    required: false
-  reaction:
-    default: rocket
-    description: Reaction to add to the triggering comment
     required: false
   registry:
     default: nixpkgs
@@ -28,62 +20,20 @@ inputs:
 runs:
   using: composite
   steps:
-    - id: command
-      uses: github/command@v2
-      with:
-        allowed_contexts: pull_request
-        command: .close
-        github_token: ${{ inputs.github-token }}
-        permissions: ${{ inputs.permissions }}
-        reaction: ${{ inputs.reaction }}
-        skip_ci: true
     - id: stack
-      if: steps.command.outputs.continue == 'true'
       uses: shikanime-studio/actions/stack@main
       with:
         github-token: ${{ inputs.github-token }}
         pull-request-url: ${{ inputs.pull-request-url }}
-    - if: steps.command.outputs.continue == 'true' && runner.debug == '1'
+    - if: runner.debug == '1'
       run: |
         echo "DEBUG_FLAG=--debug" >> "$GITHUB_ENV"
       shell: bash
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
-        INFO_METHOD: ${{ steps.stack.outputs.method }}
-        PARAMS: ${{ steps.command.outputs.params }}
-      id: pull_request
-      if: steps.command.outputs.continue == 'true'
-      run: |
-        METHOD=""
-
-        if [ -n "$PARAMS" ]; then
-          case "$PARAMS" in
-            ghstack)
-              METHOD="ghstack"
-              ;;
-            slpr)
-              METHOD="sapling-pull-request"
-              ;;
-            ghpr)
-              METHOD="github-pull-request"
-              ;;
-            *)
-              echo "Unknown close method param '$PARAMS'. Expected 'ghstack', 'slpr' or 'ghpr'."
-              exit 1
-              ;;
-          esac
-        else
-          METHOD="$INFO_METHOD"
-        fi
-
-        echo "method=$METHOD" >> "$GITHUB_OUTPUT"
-      shell: bash
-    - env:
-        GH_TOKEN: ${{ inputs.github-token }}
         USERNAME: ${{ inputs.username }}
       if: |
-        steps.pull_request.outputs.method == 'ghstack' &&
-        steps.command.outputs.continue == 'true'
+        steps.stack.outputs.method == 'ghstack'
       run: |
         GHSTACKRC_PATH=$(mktemp)
         cat > "$GHSTACKRC_PATH" <<EOF
@@ -98,8 +48,7 @@ runs:
         PR_URL: ${{ inputs.pull-request-url }}
         REGISTRY: ${{ inputs.registry }}
       if: |
-        steps.pull_request.outputs.method == 'ghstack' &&
-        steps.command.outputs.continue == 'true'
+        steps.stack.outputs.method == 'ghstack'
       run: |
         nix run "$REGISTRY#ghstack" -- $DEBUG_FLAG action \
           --close \
@@ -109,7 +58,7 @@ runs:
         GH_TOKEN: ${{ inputs.github-token }}
         PR_URL: ${{ inputs.pull-request-url }}
       if: |
-        (steps.pull_request.outputs.method == 'sapling-pull-request' || steps.pull_request.outputs.method == 'github-pull-request') &&
-        steps.command.outputs.continue == 'true'
+        steps.stack.outputs.method == 'sapling-pull-request' ||
+        steps.stack.outputs.method == 'github-pull-request'
       run: gh pr close --delete-branch "$PR_URL"
       shell: bash

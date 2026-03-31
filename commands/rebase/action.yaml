@@ -1,0 +1,81 @@
+name: commands/rebase
+description: Rebase pull request from a PR comment
+inputs:
+  base:
+    default: main
+    description: The base branch to rebase onto
+    required: false
+  email:
+    default: github-actions[bot]@users.noreply.github.com
+    description: Email
+    required: false
+  extra-args:
+    default: ""
+    description: Extra arguments to pass to `nix run`
+    required: false
+  fullname:
+    default: github-actions[bot]
+    description: Full name
+    required: false
+  github-token:
+    default: ${{ github.token }}
+    description: The GitHub Token
+    required: false
+  gpg-passphrase:
+    default: ""
+    description: GPG private key passphrase
+    required: false
+  gpg-private-key:
+    default: ""
+    description: GPG private key for signing commits
+    required: false
+  permissions:
+    default: write,maintain,admin
+    description: Permissions to require for the command
+    required: false
+  pull-request-url:
+    default: ${{ github.event.issue.pull_request.html_url }}
+    description: The Pull Request URL
+    required: false
+  reaction:
+    default: rocket
+    description: Reaction to add to the triggering comment
+    required: false
+  registry:
+    default: nixpkgs
+    description: Nix registry to use
+    required: false
+  sign-commits:
+    default: "false"
+    description: Set to true to sign commits with GPG
+    required: false
+  username:
+    default: github-actions
+    description: Username
+    required: false
+runs:
+  using: composite
+  steps:
+    - id: command
+      uses: github/command@v2
+      with:
+        allowed_contexts: pull_request
+        command: .rebase
+        github_token: ${{ inputs.github-token }}
+        permissions: ${{ inputs.permissions }}
+        reaction: ${{ inputs.reaction }}
+        skip_ci: true
+    - if: steps.command.outputs.continue == 'true'
+      uses: shikanime-studio/actions/rebase@main
+      with:
+        base: ${{ inputs.base }}
+        email: ${{ inputs.email }}
+        extra-args: ${{ inputs.extra-args }}
+        fullname: ${{ inputs.fullname }}
+        github-token: ${{ inputs.github-token }}
+        gpg-passphrase: ${{ inputs.gpg-passphrase }}
+        gpg-private-key: ${{ inputs.gpg-private-key }}
+        pull-request-url: ${{ inputs.pull-request-url }}
+        registry: ${{ inputs.registry }}
+        sign-commits: ${{ inputs.sign-commits }}
+        username: ${{ inputs.username }}
