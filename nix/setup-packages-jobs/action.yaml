@@ -1,4 +1,4 @@
-name: Setup Packages
+name: Setup Packages Jobs
 description: Generate matrix for Nix packages on Linux systems
 inputs:
   registry:
