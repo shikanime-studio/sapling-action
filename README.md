@@ -186,14 +186,14 @@ Use the composite actions to generate matrices for checks and packages.
 
 ```yaml
 jobs:
-  setup-checks:
+  setup-checks-jobs:
     runs-on: ubuntu-latest
     outputs:
       continue: ${{ steps.matrix.outputs.continue }}
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - id: matrix
-        uses: ./nix/setup-checks
+        uses: ./nix/setup-checks-jobs
         with:
           systems: >-
             {
@@ -206,28 +206,28 @@ jobs:
             }
 
   checks:
-    needs: [setup-checks]
-    if: needs.setup-checks.outputs.continue == 'true'
+    needs: [setup-checks-jobs]
+    if: needs.setup-checks-jobs.outputs.continue == 'true'
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include: >-
-          ${{ fromJSON(needs.setup-checks.outputs.matrix) }}
+          ${{ fromJSON(needs.setup-checks-jobs.outputs.matrix) }}
     steps:
       - run: nix flake check \
           --accept-flake-config \
           --no-pure-eval \
           --system "${{ matrix.system }}"
 
-  setup-packages:
+  setup-packages-jobs:
     runs-on: ubuntu-latest
     outputs:
       continue: ${{ steps.matrix.outputs.continue }}
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - id: matrix
-        uses: ./nix/setup-packages
+        uses: ./nix/setup-packages-jobs
         with:
           systems: >-
             {
@@ -237,14 +237,14 @@ jobs:
           excludes: '["devenv-up","devenv-test"]'
 
   packages:
-    needs: [setup-packages]
-    if: needs.setup-packages.outputs.continue == 'true'
+    needs: [setup-packages-jobs]
+    if: needs.setup-packages-jobs.outputs.continue == 'true'
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include: >-
-          ${{ fromJSON(needs.setup-packages.outputs.matrix) }}
+          ${{ fromJSON(needs.setup-packages-jobs.outputs.matrix) }}
     steps:
       - run: nix build \
           --accept-flake-config \

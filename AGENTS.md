@@ -63,11 +63,11 @@ then trigger via PR comments.
 
 ## Nix Matrix Helpers
 
-- nix/setup-checks
+- nix/setup-checks-jobs
   - Produces a matrix of `{ system, runner }` for checks from flake outputs.
   - Input `systems`: JSON object `{ runner: [systems...] }`.
 
-- nix/setup-packages
+- nix/setup-packages-jobs
   - Produces a matrix of `{ system, runner, name }` for package builds.
   - Inputs: `systems` as above; `excludes` JSON array of package names
     (defaults include `devenv-up`, `devenv-test`).
