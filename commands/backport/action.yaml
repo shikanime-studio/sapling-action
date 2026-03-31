@@ -50,7 +50,7 @@ runs:
         reaction: ${{ inputs.reaction }}
         skip_ci: true
     - if: steps.command.outputs.continue == 'true'
-      uses: shikanime-studio/actions/backport@main
+      uses: shikanime-studio/actions/backport@v8
       with:
         github-token: ${{ inputs.github-token }}
         gpg-passphrase: ${{ inputs.gpg-passphrase }}

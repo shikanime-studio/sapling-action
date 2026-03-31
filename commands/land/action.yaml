@@ -61,7 +61,7 @@ runs:
         permissions: ${{ inputs.permissions }}
         reaction: ${{ inputs.reaction }}
     - if: steps.command.outputs.continue == 'true'
-      uses: shikanime-studio/actions/land@main
+      uses: shikanime-studio/actions/land@v8
       with:
         base: ${{ inputs.base }}
         email: ${{ inputs.email }}
