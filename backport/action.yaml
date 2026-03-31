@@ -1,4 +1,4 @@
-name: backport
+name: Backport
 description: Backport a pull request
 inputs:
   github-token:

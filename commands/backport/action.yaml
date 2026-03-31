@@ -1,5 +1,5 @@
-name: command/backport
-description: Backport pull request from a PR comment
+name: Backport Command
+description: Backport pull request on a pull request head ref
 inputs:
   github-token:
     default: ${{ github.token }}

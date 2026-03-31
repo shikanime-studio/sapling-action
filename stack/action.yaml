@@ -1,4 +1,4 @@
-name: stack
+name: Stack
 description: Get information about a pull request
 inputs:
   github-token:

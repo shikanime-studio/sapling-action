@@ -1,5 +1,5 @@
-name: command/close
-description: Close pull request from a PR comment
+name: Close Command
+description: Close pull request on a pull request head ref
 inputs:
   github-token:
     default: ${{ github.token }}

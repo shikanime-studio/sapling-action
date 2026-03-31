@@ -16,7 +16,6 @@ App token, configure repository permissions accordingly:
 - Backport: contents: write, pull-requests: write, issues: write
 - Update: contents: write, pull-requests: write, issues: write
 - Cleanup: contents: write
-- Run: actions: write, issues: write, pull-requests: read
 
 Permissions can be configured at the workflow level or per job. The examples
 below set them at the workflow level and request matching scopes from the

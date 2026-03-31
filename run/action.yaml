@@ -1,4 +1,4 @@
-name: run
+name: Run
 description: Trigger a workflow dispatch on a pull request head ref
 inputs:
   github-token:

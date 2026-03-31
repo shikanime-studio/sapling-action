@@ -1,5 +1,5 @@
-name: command/rebase
-description: Rebase pull request from a PR comment
+name: Rebase Command
+description: Rebase pull request on a pull request head ref
 inputs:
   base:
     default: main

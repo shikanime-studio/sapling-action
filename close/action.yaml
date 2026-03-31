@@ -1,4 +1,4 @@
-name: close
+name: Close
 description: Close a pull request
 inputs:
   github-token:

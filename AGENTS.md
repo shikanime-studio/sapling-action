@@ -4,7 +4,7 @@ This repository provides comment-driven agents (composite actions) that
 automate common PR operations. Add them to workflows as shown in README,
 then trigger via PR comments.
 
-## Comment Command
+## Comment Commands
 
 - .land
   - Lands the current PR using the publication method determined from the

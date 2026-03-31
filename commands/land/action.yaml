@@ -1,5 +1,5 @@
-name: command/land
-description: Land pull request from a PR comment
+name: Land Command
+description: Land pull request on a pull request head ref
 inputs:
   base:
     default: main

@@ -1,4 +1,4 @@
-name: rebase
+name: Rebase
 description: Rebase a pull request
 inputs:
   base:

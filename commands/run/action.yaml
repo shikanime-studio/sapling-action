@@ -1,5 +1,5 @@
-name: command/run
-description: Trigger a workflow dispatch from a PR comment
+name: Run Command
+description: Trigger a workflow dispatch on a pull request head ref
 inputs:
   github-token:
     default: ${{ github.token }}
