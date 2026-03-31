@@ -1,4 +1,4 @@
-name: commands/land
+name: command/land
 description: Land pull request from a PR comment
 inputs:
   base:

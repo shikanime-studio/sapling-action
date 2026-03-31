@@ -1,4 +1,4 @@
-name: commands/run
+name: command/run
 description: Trigger a workflow dispatch from a PR comment
 inputs:
   github-token:

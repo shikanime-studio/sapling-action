@@ -24,12 +24,12 @@ GitHub App via actions/create-github-app-token.
 
 ## Workflow Configuration
 
-Add a workflow like the following to `.github/workflows/commands.yaml` to wire
-comment-driven commands to their corresponding actions. This example reflects
-the current setup used in `.github/workflows/commands.yaml`:
+Add a workflow like the following to `.github/workflows/command.yaml` to wire
+comment-driven command to their corresponding actions. This example reflects
+the current setup used in `.github/workflows/command.yaml`:
 
 ```yaml
-name: Commands
+name: Command
 'on':
   issue_comment:
     types:
@@ -65,7 +65,7 @@ jobs:
           github_access_token: >-
             ${{ steps.createGithubAppToken.outputs.token
                 || secrets.GITHUB_TOKEN }}
-      - uses: shikanime-studio/actions/commands/land@main
+      - uses: shikanime-studio/actions/command/land@main
         with:
           email: operator6o@shikanime.studio
           fullname: Operator 6O
@@ -102,7 +102,7 @@ jobs:
           github_access_token: >-
             ${{ steps.createGithubAppToken.outputs.token
                 || secrets.GITHUB_TOKEN }}
-      - uses: shikanime-studio/actions/commands/rebase@main
+      - uses: shikanime-studio/actions/command/rebase@main
         with:
           email: operator6o@shikanime.studio
           fullname: Operator 6O
@@ -139,7 +139,7 @@ jobs:
           github_access_token: >-
             ${{ steps.createGithubAppToken.outputs.token
                 || secrets.GITHUB_TOKEN }}
-      - uses: shikanime-studio/actions/commands/close@main
+      - uses: shikanime-studio/actions/command/close@main
         with:
           github-token: >-
             ${{ steps.createGithubAppToken.outputs.token
@@ -171,7 +171,7 @@ jobs:
           github_access_token: >-
             ${{ steps.createGithubAppToken.outputs.token
                 || secrets.GITHUB_TOKEN }}
-      - uses: shikanime-studio/actions/commands/backport@main
+      - uses: shikanime-studio/actions/command/backport@main
         with:
           github-token: >-
             ${{ steps.createGithubAppToken.outputs.token
@@ -284,7 +284,7 @@ Example job:
           permission-issues: write
           permission-pull-requests: read
           private-key: ${{ secrets.OPERATOR_PRIVATE_KEY }}
-      - uses: shikanime-studio/actions/commands/run@main
+      - uses: shikanime-studio/actions/command/run@main
         with:
           github-token: >-
             ${{ steps.createGithubAppToken.outputs.token

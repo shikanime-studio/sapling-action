@@ -4,34 +4,34 @@ This repository provides comment-driven agents (composite actions) that
 automate common PR operations. Add them to workflows as shown in README,
 then trigger via PR comments.
 
-## Comment Commands
+## Comment Command
 
 - .land
   - Lands the current PR using the publication method determined from the
     stack or an explicit param.
   - Usage: `.land` or `.land | ghstack|slpr|ghpr`
   - Permissions: contents: write, issues: write, pull-requests: write
-  - Action: `shikanime-studio/actions/commands/land`
+  - Action: `shikanime-studio/actions/command/land`
 
 - .rebase
   - Rebases the current PR on its base branch.
   - Usage: `.rebase`
   - Permissions: contents: write, issues: write
-  - Action: `shikanime-studio/actions/commands/rebase`
+  - Action: `shikanime-studio/actions/command/rebase`
 
 - .close
   - Closes the current PR and optionally cleans up remote branches,
     depending on stack method.
   - Usage: `.close`
   - Permissions: pull-requests: write, contents: write, issues: write
-  - Action: `shikanime-studio/actions/commands/close`
+  - Action: `shikanime-studio/actions/command/close`
 
 - .backport
   - Backports the current PR onto a target branch. Supports ghstack,
     sapling PRs, and GitHub PRs.
   - Usage: `.backport | <target-branch>`
   - Permissions: contents: write, pull-requests: write, issues: write
-  - Action: `shikanime-studio/actions/commands/backport`
+  - Action: `shikanime-studio/actions/command/backport`
 
 - .run
   - Triggers a workflow dispatch on the same repository using GitHub CLI.
@@ -39,7 +39,7 @@ then trigger via PR comments.
   - Notes: The target workflow must have `workflow_dispatch` enabled.
     Runs against the PR head ref.
   - Permissions: actions: write (plus minimal read on contents/PRs)
-  - Action: `shikanime-studio/actions/commands/run`
+  - Action: `shikanime-studio/actions/command/run`
 
 ## Non-Comment Workflows
 

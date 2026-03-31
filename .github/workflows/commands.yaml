@@ -128,7 +128,7 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           sign-commits: true
           username: operator6o
-name: Commands
+name: Command
 'on':
   issue_comment:
     types:

@@ -1,4 +1,4 @@
-name: commands/rebase
+name: command/rebase
 description: Rebase pull request from a PR comment
 inputs:
   base:

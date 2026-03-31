@@ -1,4 +1,4 @@
-name: commands/backport
+name: command/backport
 description: Backport pull request from a PR comment
 inputs:
   github-token:
