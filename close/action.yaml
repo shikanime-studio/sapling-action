@@ -29,26 +29,16 @@ runs:
       run: |
         echo "DEBUG_FLAG=--debug" >> "$GITHUB_ENV"
       shell: bash
-    - env:
-        GH_TOKEN: ${{ inputs.github-token }}
-        USERNAME: ${{ inputs.username }}
-      if: |
-        steps.stack.outputs.method == 'ghstack'
-      run: |
-        GHSTACKRC_PATH=$(mktemp)
-        cat > "$GHSTACKRC_PATH" <<EOF
-        [ghstack]
-        github_url = github.com
-        github_oauth = $GH_TOKEN
-        github_username = $USERNAME
-        EOF
-        echo "GHSTACKRC_PATH=$GHSTACKRC_PATH" >> "$GITHUB_ENV"
-      shell: bash
+    - uses: shikanime-studio/actions/config@v8
+      with:
+        github-token: ${{ inputs.github-token }}
+        method: ${{ steps.stack.outputs.method }}
+        registry: ${{ inputs.registry }}
+        username: ${{ inputs.username }}
     - env:
         PR_URL: ${{ inputs.pull-request-url }}
         REGISTRY: ${{ inputs.registry }}
-      if: |
-        steps.stack.outputs.method == 'ghstack'
+      if: steps.stack.outputs.method == 'ghstack'
       run: |
         nix run "$REGISTRY#ghstack" -- $DEBUG_FLAG action \
           --close \
@@ -57,8 +47,6 @@ runs:
     - env:
         GH_TOKEN: ${{ inputs.github-token }}
         PR_URL: ${{ inputs.pull-request-url }}
-      if: |
-        steps.stack.outputs.method == 'sapling-pull-request' ||
-        steps.stack.outputs.method == 'github-pull-request'
+      if: steps.stack.outputs.method == 'sapling-pull-request' || steps.stack.outputs.method == 'github-pull-request'
       run: gh pr close --delete-branch "$PR_URL"
       shell: bash

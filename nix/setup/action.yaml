@@ -1,0 +1,31 @@
+name: Setup Nix
+description: Install Nix and configure Cachix
+inputs:
+  github-token:
+    default: ${{ github.token }}
+    description: GitHub token used by the Nix installer
+    required: false
+  cachix-name:
+    default: ""
+    description: Cachix cache name
+    required: false
+  cachix-auth-token:
+    default: ""
+    description: Cachix auth token
+    required: false
+  cachix-signing-key:
+    default: ""
+    description: Cachix signing key
+    required: false
+runs:
+  using: composite
+  steps:
+    - uses: cachix/install-nix-action@v31
+      with:
+        github_access_token: ${{ inputs.github-token }}
+    - if: ${{ inputs.cachix-name != '' }}
+      uses: cachix/cachix-action@v16
+      with:
+        authToken: ${{ inputs.cachix-auth-token }}
+        name: ${{ inputs.cachix-name }}
+        signingKey: ${{ inputs.cachix-signing-key }}
