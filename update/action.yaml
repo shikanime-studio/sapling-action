@@ -51,24 +51,6 @@ runs:
       run: |
         echo "DEBUG_FLAG=--debug" >> "$GITHUB_ENV"
       shell: bash
-    - id: importGPG
-      if: ${{ inputs.sign-commits }}
-      uses: crazy-max/ghaction-import-gpg@v7
-      with:
-        git_commit_gpgsign: true
-        git_user_signingkey: true
-        gpg_private_key: ${{ inputs.gpg-private-key }}
-        passphrase: ${{ inputs.gpg-passphrase }}
-    - env:
-        EMAIL: ${{ inputs.email }}
-        FULLNAME: ${{ inputs.fullname }}
-        REGISTRY: ${{ inputs.registry }}
-      run: |
-        nix $DEBUG_FLAG flake update \
-          --accept-flake-config
-        nix run "$REGISTRY#sapling" -- config \
-          --local ui.username "$FULLNAME <$EMAIL>" $DEBUG_FLAG
-      shell: bash
     - env:
         METHOD: ${{ inputs.method }}
       if: ${{ !contains('ghstack,sapling-pull-request,github-pull-request', inputs.method) }}
@@ -77,46 +59,28 @@ runs:
         exit 1
       shell: bash
     - env:
-        GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
         REGISTRY: ${{ inputs.registry }}
-      if: ${{ inputs.sign-commits && inputs.method == 'sapling-pull-request' }}
       run: |
-        nix run "$REGISTRY#sapling" -- config \
-          --local commit.gpgsign true \
-          --local gpg.key "$GPG_KEY_ID" $DEBUG_FLAG
+        nix $DEBUG_FLAG flake update \
+          --accept-flake-config
       shell: bash
-    - env:
-        GPG_KEY_ID: ${{ steps.importGPG.outputs.keyid }}
-        REGISTRY: ${{ inputs.registry }}
-      if: ${{ inputs.sign-commits && inputs.method == 'github-pull-request' }}
-      run: |
-        nix run "$REGISTRY#jujutsu" -- config set \
-          --repo signing.backend gpg $DEBUG_FLAG
-        nix run "$REGISTRY#jujutsu" -- config set \
-          --repo signing.sign-all true $DEBUG_FLAG
-        nix run "$REGISTRY#jujutsu" -- config set \
-          --repo signing.key "$GPG_KEY_ID" $DEBUG_FLAG
-      shell: bash
+    - uses: shikanime-studio/actions/config@v8
+      with:
+        email: ${{ inputs.email }}
+        fullname: ${{ inputs.fullname }}
+        github-token: ${{ inputs.github-token }}
+        gpg-passphrase: ${{ inputs.gpg-passphrase }}
+        gpg-private-key: ${{ inputs.gpg-private-key }}
+        method: ${{ inputs.method }}
+        registry: ${{ inputs.registry }}
+        sign-commits: ${{ inputs.sign-commits }}
+        username: ${{ inputs.username }}
     - env:
         COMMIT_MESSAGE: ${{ inputs.commit-message }}
         REGISTRY: ${{ inputs.registry }}
       run: |
         nix run "$REGISTRY#sapling" -- ci \
           --message "$COMMIT_MESSAGE" $DEBUG_FLAG
-      shell: bash
-    - env:
-        GH_TOKEN: ${{ inputs.github-token }}
-        USERNAME: ${{ inputs.username }}
-      if: inputs.method == 'ghstack'
-      run: |
-        GHSTACKRC_PATH=$(mktemp)
-        cat > "$GHSTACKRC_PATH" <<EOF
-        [ghstack]
-        github_url = github.com
-        github_oauth = $GH_TOKEN
-        github_username = $USERNAME
-        EOF
-        echo "GHSTACKRC_PATH=$GHSTACKRC_PATH" >> "$GITHUB_ENV"
       shell: bash
     - env:
         REGISTRY: ${{ inputs.registry }}
