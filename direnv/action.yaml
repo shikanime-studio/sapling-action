@@ -1,0 +1,24 @@
+name: Setup direnv
+description: Allow .envrc and export its environment to GitHub Actions
+inputs:
+  path:
+    default: .
+    description: Directory containing .envrc
+    required: false
+  registry:
+    default: nixpkgs
+    description: Nix registry to use
+    required: false
+runs:
+  using: composite
+  steps:
+    - env:
+        REGISTRY: ${{ inputs.registry }}
+      run: nix run "$REGISTRY#direnv" -- allow .
+      shell: bash
+      working-directory: ${{ inputs.path }}
+    - env:
+        REGISTRY: ${{ inputs.registry }}
+      run: nix run "$REGISTRY#direnv" -- export gha >> "$GITHUB_ENV"
+      shell: bash
+      working-directory: ${{ inputs.path }}
