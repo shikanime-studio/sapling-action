@@ -2,8 +2,9 @@ name: Config
 description: Configure tooling for subsequent steps
 inputs:
   method:
+    default: github-pull-request
     description: One of 'ghstack', 'sapling-pull-request', or 'github-pull-request'
-    required: true
+    required: false
   email:
     default: github-actions[bot]@users.noreply.github.com
     description: Email for sapling identity
