@@ -1,0 +1,36 @@
+name: Run
+description: Trigger a workflow dispatch on a pull request head ref
+inputs:
+  github-token:
+    default: ${{ github.token }}
+    description: The GitHub Token
+    required: false
+  pull-request-url:
+    default: ${{ github.event.pull_request.html_url || github.event.issue.pull_request.html_url }}
+    description: The Pull Request URL
+    required: false
+  workflow:
+    description: Workflow name or path to run (must support workflow_dispatch)
+    required: true
+runs:
+  using: composite
+  steps:
+    - id: stack
+      uses: shikanime-studio/actions/stack@main
+      with:
+        github-token: ${{ inputs.github-token }}
+        pull-request-url: ${{ inputs.pull-request-url }}
+    - env:
+        GH_REPO: ${{ github.repository }}
+        GH_TOKEN: ${{ inputs.github-token }}
+        REF: ${{ steps.stack.outputs.head-ref }}
+        WORKFLOW: ${{ inputs.workflow }}
+      run: |
+        if [ -z "$REF" ]; then
+          echo "Error: could not determine PR head ref"
+          exit 1
+        fi
+        gh workflow run "$WORKFLOW" \
+          --ref "$REF" \
+          --repo "$GH_REPO"
+      shell: bash

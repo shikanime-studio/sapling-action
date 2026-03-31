@@ -28,7 +28,7 @@ comment-driven commands to their corresponding actions. This example reflects
 the current setup used in `.github/workflows/commands.yaml`:
 
 ```yaml
-name: Commands
+name: Command
 'on':
   issue_comment:
     types:
@@ -64,7 +64,7 @@ jobs:
           github_access_token: >-
             ${{ steps.createGithubAppToken.outputs.token
                 || secrets.GITHUB_TOKEN }}
-      - uses: shikanime-studio/actions/land@v7
+      - uses: shikanime-studio/actions/command/land@main
         with:
           email: operator6o@shikanime.studio
           fullname: Operator 6O
@@ -101,7 +101,7 @@ jobs:
           github_access_token: >-
             ${{ steps.createGithubAppToken.outputs.token
                 || secrets.GITHUB_TOKEN }}
-      - uses: shikanime-studio/actions/rebase@v7
+      - uses: shikanime-studio/actions/command/rebase@main
         with:
           email: operator6o@shikanime.studio
           fullname: Operator 6O
@@ -138,7 +138,7 @@ jobs:
           github_access_token: >-
             ${{ steps.createGithubAppToken.outputs.token
                 || secrets.GITHUB_TOKEN }}
-      - uses: shikanime-studio/actions/close@v7
+      - uses: shikanime-studio/actions/command/close@main
         with:
           github-token: >-
             ${{ steps.createGithubAppToken.outputs.token
@@ -170,7 +170,7 @@ jobs:
           github_access_token: >-
             ${{ steps.createGithubAppToken.outputs.token
                 || secrets.GITHUB_TOKEN }}
-      - uses: shikanime-studio/actions/backport@v7
+      - uses: shikanime-studio/actions/command/backport@main
         with:
           github-token: >-
             ${{ steps.createGithubAppToken.outputs.token
@@ -250,6 +250,44 @@ jobs:
           --accept-flake-config \
           --no-pure-eval \
           ".#packages.${{ matrix.system }}.${{ matrix.name }}"
+```
+
+## Run Workflow
+
+Trigger a workflow dispatch from a PR comment:
+
+- Comment format: `.run | <workflow>`
+- `<workflow>` can be a workflow name or a workflow file path.
+- The target workflow must have `workflow_dispatch` enabled.
+- The job token needs `actions: write`.
+
+Example job:
+
+```yaml
+  run:
+    if: >-
+      github.event.issue.pull_request != null &&
+      contains(github.event.comment.body, '.run')
+    permissions:
+      actions: write
+      issues: write
+      pull-requests: read
+    runs-on: ubuntu-slim
+    steps:
+      - continue-on-error: true
+        id: createGithubAppToken
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.OPERATOR_APP_ID }}
+          permission-actions: write
+          permission-issues: write
+          permission-pull-requests: read
+          private-key: ${{ secrets.OPERATOR_PRIVATE_KEY }}
+      - uses: shikanime-studio/actions/command/run@main
+        with:
+          github-token: >-
+            ${{ steps.createGithubAppToken.outputs.token
+                || secrets.GITHUB_TOKEN }}
 ```
 
 To automate dependency updates and repository hygiene, you can also add a

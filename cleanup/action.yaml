@@ -1,4 +1,4 @@
-name: cleanup
+name: Cleanup
 description: Cleanup branches after Pull Request is closed
 inputs:
   github-token:
