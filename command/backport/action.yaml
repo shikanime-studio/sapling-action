@@ -58,4 +58,5 @@ runs:
         pull-request-url: ${{ inputs.pull-request-url }}
         registry: ${{ inputs.registry }}
         sign-commits: ${{ inputs.sign-commits }}
+        target-branch: ${{ steps.command.outputs.params }}
         username: ${{ inputs.username }}
