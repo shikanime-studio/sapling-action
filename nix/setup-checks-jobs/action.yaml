@@ -17,28 +17,30 @@ runs:
   using: composite
   steps:
     - id: matrix
-      uses: actions/github-script@v8
-      with:
-        script: |
-          const systemsRaw = core.getInput('systems') || '{}';
-          const systems = JSON.parse(systemsRaw);
-          const { stdout: jsonText } = await exec.getExecOutput(
-            'nix',
-            ['flake', 'show', '--json', '--all-systems', '--accept-flake-config', '--no-pure-eval'],
-            { silent: true },
-          );
-          const flake = JSON.parse(jsonText);
-          const availableSystems = Object.keys(flake.checks || {});
-          const matrix = [];
-          for (const [runner, list] of Object.entries(systems)) {
-            for (const system of list) {
-              if (availableSystems.includes(system)) {
-                matrix.push({ system, runner });
-              }
-            }
-          }
-          core.setOutput('matrix', JSON.stringify(matrix));
-          core.setOutput('continue', matrix.length > 0 ? 'true' : 'false');
+      env:
+        REGISTRY: ${{ inputs.registry }}
+        SYSTEMS: ${{ inputs.systems }}
+      run: |
+        JSON="$(nix flake show --json --all-systems --accept-flake-config --no-pure-eval)"
+        MATRIX="$(
+          nix run "$REGISTRY#jq" -- -c '
+            .checks as $root
+            | ($root | keys) as $available
+            | (env.SYSTEMS | fromjson) as $systems
+            | ($systems | to_entries)
+            | map(. as $pair
+                  | ($pair.value
+                     | map(select(. as $s | $available | index($s)))
+                     | map({system: ., runner: $pair.key})
+                    )
+                )
+            | flatten
+          ' <<< "$JSON"
+        )"
+        echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+        continue=$([ "$MATRIX" = "[]" ] && echo "false" || echo "true")
+        echo "continue=$continue" >> "$GITHUB_OUTPUT"
+      shell: bash
 outputs:
   continue:
     description: Whether any Linux checks/packages exist
