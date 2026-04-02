@@ -31,17 +31,15 @@ runs:
       uses: actions/github-script@v8
       with:
         script: |
-          const { exec } = await import('node:child_process');
-          const { promisify } = await import('node:util');
-          const execAsync = promisify(exec);
           const systemsRaw = core.getInput('systems') || '{}';
           const excludesRaw = core.getInput('excludes') || '[]';
           const systems = JSON.parse(systemsRaw);
           const excludes = new Set(JSON.parse(excludesRaw));
-          const { stdout: jsonText } = await execAsync('nix flake show --json --all-systems --accept-flake-config --no-pure-eval', {
-            encoding: 'utf8',
-            maxBuffer: 50 * 1024 * 1024,
-          });
+          const { stdout: jsonText } = await exec.getExecOutput(
+            'nix',
+            ['flake', 'show', '--json', '--all-systems', '--accept-flake-config', '--no-pure-eval'],
+            { silent: true },
+          );
           const flake = JSON.parse(jsonText);
           const packagesBySystem = flake.packages || {};
           const sys2runner = {};
