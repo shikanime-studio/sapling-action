@@ -28,36 +28,35 @@ runs:
   using: composite
   steps:
     - id: matrix
-      env:
-        REGISTRY: ${{ inputs.registry }}
-        SYSTEMS: ${{ inputs.systems }}
-        EXCLUDES: ${{ inputs.excludes }}
-      run: |
-        JSON="$(nix flake show --json --all-systems --accept-flake-config --no-pure-eval)"
-        MATRIX="$(
-          nix run "$REGISTRY#jq" -- -c '
-            .packages
-            | to_entries
-            | (env.SYSTEMS | fromjson) as $systems
-            | ($systems | to_entries) as $pairs
-            | ($pairs
-               | reduce .[] as $p ({}; . + ($p.value | reduce .[] as $s ({}; . + {($s): $p.key})))
-              ) as $sys2runner
-            | map(select(.key as $s | $sys2runner | has($s)))
-            | reduce .[] as $entry ([]; . += (
-                  ( ($entry.value | keys)
-                    | (env.EXCLUDES | fromjson) as $excludes
-                    | map(select(. as $name | $excludes | index($name) | not))
-                  )
-                  | map({
-                      system: $entry.key,
-                      runner: ($sys2runner[$entry.key] // "ubuntu-latest"),
-                      name: .
-                    })
-                ))
-          ' <<< "$JSON"
-        )"
-        echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
-        continue=$([ "$MATRIX" = "[]" ] && echo "false" || echo "true")
-        echo "continue=$continue" >> "$GITHUB_OUTPUT"
-      shell: bash
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { exec } = await import('node:child_process');
+          const { promisify } = await import('node:util');
+          const execAsync = promisify(exec);
+          const systemsRaw = core.getInput('systems') || '{}';
+          const excludesRaw = core.getInput('excludes') || '[]';
+          const systems = JSON.parse(systemsRaw);
+          const excludes = new Set(JSON.parse(excludesRaw));
+          const { stdout: jsonText } = await execAsync('nix flake show --json --all-systems --accept-flake-config --no-pure-eval', {
+            encoding: 'utf8',
+            maxBuffer: 50 * 1024 * 1024,
+          });
+          const flake = JSON.parse(jsonText);
+          const packagesBySystem = flake.packages || {};
+          const sys2runner = {};
+          for (const [runner, list] of Object.entries(systems)) {
+            for (const system of list) {
+              sys2runner[system] = runner;
+            }
+          }
+          const matrix = [];
+          for (const [system, pkgs] of Object.entries(packagesBySystem)) {
+            if (!(system in sys2runner)) continue;
+            for (const name of Object.keys(pkgs || {})) {
+              if (excludes.has(name)) continue;
+              matrix.push({ system, runner: sys2runner[system] || 'ubuntu-latest', name });
+            }
+          }
+          core.setOutput('matrix', JSON.stringify(matrix));
+          core.setOutput('continue', matrix.length > 0 ? 'true' : 'false');
