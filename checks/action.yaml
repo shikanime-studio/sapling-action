@@ -24,46 +24,52 @@ runs:
       with:
         github-token: ${{ inputs.github-token }}
         script: |
-          const requiredLabel = core.getInput('label') || 'auto';
+          const requiredLabel = (core.getInput('label') || 'auto').trim();
           const prUrl = core.getInput('pull-request-url', { required: true });
-          const prNumber = Number(prUrl.split('/pull/')[1]?.split(/[\/#?]/)[0]);
+          const match = prUrl.match(/\/pull\/(\d+)(?:[/?#]|$)/);
+          const prNumber = match ? Number(match[1]) : 0;
           if (!prNumber) {
             core.setOutput('continue', 'false');
             return;
           }
           const headSha = context.payload?.check_suite?.head_sha;
           const { owner, repo } = context.repo;
-          const query = `
-            query($owner: String!, $name: String!, $number: Int!) {
-              repository(owner: $owner, name: $name) {
-                pullRequest(number: $number) {
-                  state
-                  isDraft
-                  merged
-                  headRefOid
-                  labels(first: 100) {
-                    nodes { name }
-                  }
-                  commits(last: 1) {
-                    nodes {
-                      commit {
-                        statusCheckRollup { state }
+          try {
+            const query = `
+              query($owner: String!, $name: String!, $number: Int!) {
+                repository(owner: $owner, name: $name) {
+                  pullRequest(number: $number) {
+                    state
+                    isDraft
+                    merged
+                    headRefOid
+                    labels(first: 100) {
+                      nodes { name }
+                    }
+                    commits(last: 1) {
+                      nodes {
+                        commit {
+                          statusCheckRollup { state }
+                        }
                       }
                     }
                   }
                 }
               }
-            }
-          `;
-          const resp = await github.graphql(query, { owner, name: repo, number: prNumber });
-          const pr = resp.repository.pullRequest;
-          const prHead = pr.headRefOid;
-          const labels = (pr.labels?.nodes || []).map((l) => l.name);
-          const labelOk = labels.includes(requiredLabel);
-          const nodes = pr.commits.nodes;
-          const rollupState = nodes?.[0]?.commit?.statusCheckRollup?.state || '';
-          const shaOk = headSha ? prHead === headSha : true;
-          const prOk = pr.state === 'OPEN' && pr.isDraft === false && pr.merged === false;
-          const checksOk = rollupState === 'SUCCESS';
-          const ok = prOk && labelOk && checksOk && shaOk;
-          core.setOutput('continue', ok ? 'true' : 'false');
+            `;
+            const resp = await github.graphql(query, { owner, name: repo, number: prNumber });
+            const pr = resp.repository.pullRequest;
+            const prHead = pr.headRefOid;
+            const labels = (pr.labels?.nodes || []).map((l) => l.name);
+            const labelOk = labels.includes(requiredLabel);
+            const nodes = pr.commits.nodes;
+            const rollupState = nodes?.[0]?.commit?.statusCheckRollup?.state || '';
+            const shaOk = headSha ? prHead === headSha : true;
+            const prOk = pr.state === 'OPEN' && pr.isDraft === false && pr.merged === false;
+            const checksOk = rollupState === 'SUCCESS';
+            const ok = prOk && labelOk && checksOk && shaOk;
+            core.setOutput('continue', ok ? 'true' : 'false');
+          } catch (e) {
+            core.setOutput('continue', 'false');
+            core.setFailed(`failed to evaluate PR checks: ${e?.message || String(e)}`);
+          }

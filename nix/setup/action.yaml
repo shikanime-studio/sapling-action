@@ -37,8 +37,13 @@ runs:
       if: ${{ inputs.extra-platforms != '' }}
       with:
         script: |
-          const extraPlatformsConfig = '${{ inputs.extra-platforms }}'.split(',').map(p => {
-            switch (p.trim()) {
+          const raw = core.getInput('extra-platforms') || '';
+          const extraPlatformsConfig = raw
+            .split(',')
+            .map((p) => p.trim())
+            .filter((p) => p)
+            .map((p) => {
+              switch (p) {
               case 'amd64':
                 return 'x86_64-linux';
               case 'arm64':
@@ -46,8 +51,10 @@ runs:
               default:
                 core.warning(`unsupported platform: ${p}`);
                 return null;
-            }
-          }).filter(p => p).join(' ');
+              }
+            })
+            .filter((p) => p)
+            .join(' ');
           if (extraPlatformsConfig) {
             core.setOutput('nix-config', `extra-platforms = ${extraPlatformsConfig}`);
           }

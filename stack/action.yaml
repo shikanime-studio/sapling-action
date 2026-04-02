@@ -31,7 +31,8 @@ runs:
         github-token: ${{ inputs.github-token }}
         script: |
           const prUrl = core.getInput('pull-request-url') || '';
-          const prNumber = Number(prUrl.split('/pull/')[1]?.split(/[\/#?]/)[0] || 0);
+          const match = prUrl.match(/\/pull\/(\d+)(?:[/?#]|$)/);
+          const prNumber = match ? Number(match[1]) : 0;
           if (!prNumber) {
             core.setOutput('base-ref', '');
             core.setOutput('head-ref', '');
@@ -40,46 +41,54 @@ runs:
             return;
           }
           const { owner, repo } = context.repo;
-          const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
-          const branch = pr.head.ref;
-          const base = pr.base.ref;
-          const body = pr.body || '';
+          try {
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+            const branch = pr.head.ref;
+            const base = pr.base.ref;
+            const body = pr.body || '';
 
-          core.setOutput('head-ref', branch);
-          core.setOutput('base-ref', base);
+            core.setOutput('head-ref', branch);
+            core.setOutput('base-ref', base);
 
-          let method = 'github-pull-request';
-          if (/^gh\/[^/]+\/[0-9]+\/head$/.test(branch)) {
-            method = 'ghstack';
-          } else if (body.includes('Stack from [ghstack]')) {
-            method = 'ghstack';
-          } else if (/^pr[0-9]+$/.test(branch)) {
-            method = 'sapling-pull-request';
-          } else if (body.includes('Stack created with https://sapling-scm.com')) {
-            method = 'sapling-pull-request';
-          }
+            let method = 'github-pull-request';
+            if (/^gh\/[^/]+\/[0-9]+\/head$/.test(branch)) {
+              method = 'ghstack';
+            } else if (body.includes('Stack from [ghstack]')) {
+              method = 'ghstack';
+            } else if (/^pr[0-9]+$/.test(branch)) {
+              method = 'sapling-pull-request';
+            } else if (body.includes('Stack created with https://sapling-scm.com')) {
+              method = 'sapling-pull-request';
+            }
 
-          core.setOutput('method', method);
+            core.setOutput('method', method);
 
-          let parentUrl = '';
-          if (method === 'ghstack' || method === 'sapling-pull-request') {
-            if (body.includes('__->__')) {
-              const stackLines = body.split('\n').filter((l) => l.startsWith('* '));
-              const idx = stackLines.findIndex((l) => l.includes('__->__'));
-              const parentLine = idx >= 0 ? stackLines[idx + 1] : '';
-              if (parentLine && !parentLine.includes('__->__')) {
-                const match = parentLine.match(/#(\d+)/);
-                const parentNumber = match ? Number(match[1]) : 0;
-                if (parentNumber) {
-                  const { data: parentPr } = await github.rest.pulls.get({
-                    owner,
-                    repo,
-                    pull_number: parentNumber,
-                  });
-                  parentUrl = parentPr.html_url || '';
+            let parentUrl = '';
+            if (method === 'ghstack' || method === 'sapling-pull-request') {
+              if (body.includes('__->__')) {
+                const stackLines = body.split('\n').filter((l) => l.startsWith('* '));
+                const idx = stackLines.findIndex((l) => l.includes('__->__'));
+                const parentLine = idx >= 0 ? stackLines[idx + 1] : '';
+                if (parentLine && !parentLine.includes('__->__')) {
+                  const parentMatch = parentLine.match(/#(\d+)/);
+                  const parentNumber = parentMatch ? Number(parentMatch[1]) : 0;
+                  if (parentNumber) {
+                    const { data: parentPr } = await github.rest.pulls.get({
+                      owner,
+                      repo,
+                      pull_number: parentNumber,
+                    });
+                    parentUrl = parentPr.html_url || '';
+                  }
                 }
               }
             }
-          }
 
-          core.setOutput('parent-pull-request-url', parentUrl);
+            core.setOutput('parent-pull-request-url', parentUrl);
+          } catch (e) {
+            core.setOutput('base-ref', '');
+            core.setOutput('head-ref', '');
+            core.setOutput('method', '');
+            core.setOutput('parent-pull-request-url', '');
+            core.setFailed(`failed to fetch pull request data: ${e?.message || String(e)}`);
+          }
