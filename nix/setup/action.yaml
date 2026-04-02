@@ -17,11 +17,45 @@ inputs:
     default: ""
     description: Cachix signing key
     required: false
+  extra-config:
+    default: ""
+    description: Extra Nix config
+    required: false
+  extra-platforms:
+    default: ""
+    description: Platforms to setup QEMU for
+    required: false
 runs:
   using: composite
   steps:
+    - uses: docker/setup-qemu-action@v4
+      if: ${{ inputs.extra-platforms != '' }}
+      with:
+        platforms: ${{ inputs.extra-platforms }}
+    - id: extra-platforms-config
+      uses: actions/github-script@v7
+      if: ${{ inputs.extra-platforms != '' }}
+      with:
+        script: |
+          const extraPlatformsConfig = '${{ inputs.extra-platforms }}'.split(',').map(p => {
+            switch (p.trim()) {
+              case 'amd64':
+                return 'x86_64-linux';
+              case 'arm64':
+                return 'aarch64-linux';
+              default:
+                core.warning(`unsupported platform: ${p}`);
+                return null;
+            }
+          }).filter(p => p).join(' ');
+          if (extraPlatformsConfig) {
+            core.setOutput('nix-config', `extra-platforms = ${extraPlatformsConfig}`);
+          }
     - uses: cachix/install-nix-action@v31
       with:
+        extra_nix_config: |
+          ${{ steps.extra-platforms-config.outputs.nix-config }}
+          ${{ inputs.extra-config }}
         github_access_token: ${{ inputs.github-token }}
     - if: ${{ inputs.cachix-name != '' }}
       uses: cachix/cachix-action@v17
