@@ -33,7 +33,7 @@ runs:
       with:
         platforms: ${{ inputs.extra-platforms }}
     - id: extra-platforms-config
-      uses: actions/github-script@v7
+      uses: actions/github-script@v8
       if: ${{ inputs.extra-platforms != '' }}
       with:
         script: |
