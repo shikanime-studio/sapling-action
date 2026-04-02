@@ -33,24 +33,37 @@ runs:
       with:
         platforms: ${{ inputs.extra-platforms }}
     - id: extra-platforms-config
-      uses: actions/github-script@v8
       if: ${{ inputs.extra-platforms != '' }}
-      with:
-        script: |
-          const extraPlatformsConfig = '${{ inputs.extra-platforms }}'.split(',').map(p => {
-            switch (p.trim()) {
-              case 'amd64':
-                return 'x86_64-linux';
-              case 'arm64':
-                return 'aarch64-linux';
-              default:
-                core.warning(`unsupported platform: ${p}`);
-                return null;
-            }
-          }).filter(p => p).join(' ');
-          if (extraPlatformsConfig) {
-            core.setOutput('nix-config', `extra-platforms = ${extraPlatformsConfig}`);
-          }
+      env:
+        EXTRA_PLATFORMS: ${{ inputs.extra-platforms }}
+      shell: bash
+      run: |
+        NIX_PLATFORMS=""
+
+        IFS=',' read -ra parts <<<"$EXTRA_PLATFORMS"
+        for part in "${parts[@]}"; do
+          p="$(echo "$part" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          if [ -z "$p" ]; then
+            continue
+          fi
+
+          case "$p" in
+            amd64)
+              NIX_PLATFORMS="${NIX_PLATFORMS} x86_64-linux"
+              ;;
+            arm64)
+              NIX_PLATFORMS="${NIX_PLATFORMS} aarch64-linux"
+              ;;
+            *)
+              echo "::warning::unsupported platform: ${p}"
+              ;;
+          esac
+        done
+
+        NIX_PLATFORMS="$(echo "$NIX_PLATFORMS" | xargs)"
+        if [[ -n "$NIX_PLATFORMS" ]]; then
+          echo "nix-config=extra-platforms = ${NIX_PLATFORMS}" >> "$GITHUB_OUTPUT"
+        fi
     - uses: cachix/install-nix-action@v31
       with:
         extra_nix_config: |
