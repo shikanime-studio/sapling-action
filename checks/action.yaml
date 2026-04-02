@@ -32,6 +32,9 @@ runs:
             return;
           }
           const headSha = context.payload?.check_suite?.head_sha;
+          const suitePrNumbers = (context.payload?.check_suite?.pull_requests || [])
+            .map((p) => p?.number)
+            .filter(Boolean);
           const { owner, repo } = context.repo;
           const query = `
             query($owner: String!, $name: String!, $number: Int!) {
@@ -62,7 +65,8 @@ runs:
           const labelOk = labels.includes(requiredLabel);
           const nodes = pr.commits.nodes;
           const rollupState = nodes?.[0]?.commit?.statusCheckRollup?.state || '';
-          const shaOk = headSha ? prHead === headSha : true;
+          const enforceSha = Boolean(headSha && suitePrNumbers.includes(prNumber));
+          const shaOk = enforceSha ? prHead === headSha : true;
           const prOk = pr.state === 'OPEN' && pr.isDraft === false && pr.merged === false;
           const checksOk = rollupState === 'SUCCESS';
           const ok = prOk && labelOk && checksOk && shaOk;
