@@ -4,6 +4,17 @@ This repository provides comment-driven agents (composite actions) that
 automate common PR operations. Add them to workflows as shown in README,
 then trigger via PR comments.
 
+## Coding Style
+
+- Prefer composite `run:` steps in Bash over `actions/github-script` unless
+  JavaScript is required.
+- Pass action inputs into scripts via `env:` instead of embedding `${{ ... }}`
+  inside the script body.
+- Write step outputs using `$GITHUB_OUTPUT` (not the deprecated `::set-output`).
+- Keep scripts small and explicit (avoid clever one-liners); fail fast on
+  unsupported values using `::warning::` / `::error::` as appropriate.
+- Keep Markdown lines wrapped at 80 columns and run `nix fmt` before shipping.
+
 ## Comment Commands
 
 - .land
