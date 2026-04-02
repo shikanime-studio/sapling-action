@@ -33,14 +33,36 @@ runs:
         script: |
           const systemsRaw = core.getInput('systems') || '{}';
           const excludesRaw = core.getInput('excludes') || '[]';
-          const systems = JSON.parse(systemsRaw);
-          const excludes = new Set(JSON.parse(excludesRaw));
-          const { stdout: jsonText } = await exec.getExecOutput(
+          let systems;
+          let excludes;
+          try {
+            systems = JSON.parse(systemsRaw);
+          } catch (e) {
+            core.setFailed(`invalid JSON for input "systems": ${e?.message || String(e)}`);
+            return;
+          }
+          try {
+            excludes = new Set(JSON.parse(excludesRaw));
+          } catch (e) {
+            core.setFailed(`invalid JSON for input "excludes": ${e?.message || String(e)}`);
+            return;
+          }
+          const { exitCode, stdout: jsonText, stderr } = await exec.getExecOutput(
             'nix',
             ['flake', 'show', '--json', '--all-systems', '--accept-flake-config', '--no-pure-eval'],
-            { silent: true },
+            { silent: true, ignoreReturnCode: true },
           );
-          const flake = JSON.parse(jsonText);
+          if (exitCode !== 0) {
+            core.setFailed(`nix flake show failed (exit ${exitCode})${stderr ? `\n\n${stderr.trim()}` : ''}`);
+            return;
+          }
+          let flake;
+          try {
+            flake = JSON.parse(jsonText);
+          } catch (e) {
+            core.setFailed(`failed to parse nix flake show JSON: ${e?.message || String(e)}`);
+            return;
+          }
           const packagesBySystem = flake.packages || {};
           const sys2runner = {};
           for (const [runner, list] of Object.entries(systems)) {
