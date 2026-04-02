@@ -24,7 +24,7 @@ runs:
       with:
         github_access_token: ${{ inputs.github-token }}
     - if: ${{ inputs.cachix-name != '' }}
-      uses: cachix/cachix-action@v16
+      uses: cachix/cachix-action@v17
       with:
         authToken: ${{ inputs.cachix-auth-token }}
         name: ${{ inputs.cachix-name }}
