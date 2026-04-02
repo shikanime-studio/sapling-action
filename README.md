@@ -180,6 +180,26 @@ jobs:
           sign-commits: true
 ```
 
+## Nix Setup Action
+
+Use the composite action to install Nix, optionally configure Cachix, and (on
+Linux) enable QEMU for additional platforms.
+
+- `extra-platforms` accepts `amd64` and `arm64` (comma-separated). It configures
+  both QEMU and Nix `extra-platforms` accordingly.
+
+```yaml
+steps:
+  - uses: shikanime-studio/actions/nix/setup@main
+    with:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+      cachix-name: my-cache
+      cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      extra-platforms: arm64
+      extra-config: |
+        experimental-features = nix-command flakes
+```
+
 ## Nix Matrix Actions
 
 Use the composite actions to generate matrices for checks and packages.

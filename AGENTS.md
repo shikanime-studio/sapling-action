@@ -61,6 +61,15 @@ then trigger via PR comments.
     multiple agents.
   - Action: `shikanime-studio/actions/stack`
 
+## Nix Utilities
+
+- nix/setup
+  - Installs Nix and configures Cachix (optionally with QEMU for extra
+    platforms).
+  - Inputs: `extra-config` (extra Nix config), `extra-platforms`
+    (comma-separated: `amd64`, `arm64`).
+  - Action: `shikanime-studio/actions/nix/setup`
+
 ## Nix Matrix Helpers
 
 - nix/setup-checks-jobs

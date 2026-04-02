@@ -25,61 +25,52 @@ outputs:
 runs:
   using: composite
   steps:
-    - id: stack
-      uses: actions/github-script@v8
-      with:
-        github-token: ${{ inputs.github-token }}
-        script: |
-          const prUrl = core.getInput('pull-request-url') || '';
-          const prNumber = Number(prUrl.split('/pull/')[1]?.split(/[\/#?]/)[0] || 0);
-          if (!prNumber) {
-            core.setOutput('base-ref', '');
-            core.setOutput('head-ref', '');
-            core.setOutput('method', '');
-            core.setOutput('parent-pull-request-url', '');
-            return;
-          }
-          const { owner, repo } = context.repo;
-          const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
-          const branch = pr.head.ref;
-          const base = pr.base.ref;
-          const body = pr.body || '';
+    - env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        PR_URL: ${{ inputs.pull-request-url }}
+      id: stack
+      run: |
+        JSON=$(gh pr view "$PR_URL" --json headRefName,baseRefName,body)
+        BRANCH=$(echo "$JSON" | jq -r .headRefName)
+        BASE=$(echo "$JSON" | jq -r .baseRefName)
+        BODY=$(echo "$JSON" | jq -r .body)
 
-          core.setOutput('head-ref', branch);
-          core.setOutput('base-ref', base);
+        echo "head-ref=$BRANCH" >> "$GITHUB_OUTPUT"
+        echo "base-ref=$BASE" >> "$GITHUB_OUTPUT"
 
-          let method = 'github-pull-request';
-          if (/^gh\/[^/]+\/[0-9]+\/head$/.test(branch)) {
-            method = 'ghstack';
-          } else if (body.includes('Stack from [ghstack]')) {
-            method = 'ghstack';
-          } else if (/^pr[0-9]+$/.test(branch)) {
-            method = 'sapling-pull-request';
-          } else if (body.includes('Stack created with https://sapling-scm.com')) {
-            method = 'sapling-pull-request';
-          }
+        METHOD=""
 
-          core.setOutput('method', method);
+        if [[ "$BRANCH" =~ ^gh/[^/]+/[0-9]+/head$ ]]; then
+          METHOD="ghstack"
+        elif [[ "$BODY" == *"Stack from [ghstack]"* ]]; then
+          METHOD="ghstack"
+        elif [[ "$BRANCH" =~ ^pr[0-9]+$ ]]; then
+          METHOD="sapling-pull-request"
+        elif [[ "$BODY" == *"Stack created with https://sapling-scm.com"* ]]; then
+          METHOD="sapling-pull-request"
+        else
+          METHOD="github-pull-request"
+        fi
 
-          let parentUrl = '';
-          if (method === 'ghstack' || method === 'sapling-pull-request') {
-            if (body.includes('__->__')) {
-              const stackLines = body.split('\n').filter((l) => l.startsWith('* '));
-              const idx = stackLines.findIndex((l) => l.includes('__->__'));
-              const parentLine = idx >= 0 ? stackLines[idx + 1] : '';
-              if (parentLine && !parentLine.includes('__->__')) {
-                const match = parentLine.match(/#(\d+)/);
-                const parentNumber = match ? Number(match[1]) : 0;
-                if (parentNumber) {
-                  const { data: parentPr } = await github.rest.pulls.get({
-                    owner,
-                    repo,
-                    pull_number: parentNumber,
-                  });
-                  parentUrl = parentPr.html_url || '';
-                }
-              }
-            }
-          }
+        echo "method=$METHOD" >> "$GITHUB_OUTPUT"
 
-          core.setOutput('parent-pull-request-url', parentUrl);
+        PARENT_PR=""
+
+        if [[ "$METHOD" == "ghstack" || "$METHOD" == "sapling-pull-request" ]]; then
+          if echo "$BODY" | grep -q "__->__"; then
+            STACK_LINES=$(echo "$BODY" | grep "^* ")
+            PARENT_LINE=$(echo "$STACK_LINES" | grep -A 1 "__->__" | tail -n 1)
+
+            if [[ "$PARENT_LINE" != *"__->__"* ]]; then
+              PARENT_PR=$(echo "$PARENT_LINE" | sed -n 's/.*#\([0-9]*\).*/\1/p')
+            fi
+          fi
+        fi
+
+        if [[ -n "$PARENT_PR" ]]; then
+          echo "Checking parent PR #$PARENT_PR..."
+          STATUS_JSON=$(gh pr view "$PARENT_PR" --json url,statusCheckRollup)
+          PARENT_PR_URL=$(echo "$STATUS_JSON" | jq -r .url)
+          echo "parent-pull-request-url=$PARENT_PR_URL" >> "$GITHUB_OUTPUT"
+        fi
+      shell: bash
