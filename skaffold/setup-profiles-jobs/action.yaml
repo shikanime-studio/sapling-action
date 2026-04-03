@@ -17,7 +17,6 @@ runs:
         ROOT_PATH: ${{ inputs.path }}
         REGISTRY: ${{ inputs.registry }}
       run: |
-        set -euo pipefail
         FILE="$ROOT_PATH/skaffold.yaml"
         MATRIX="$(nix run "$REGISTRY#yq-go" -- -o=json -I=0 '.profiles // [] | map({profile: .name})' "$FILE")"
         echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
