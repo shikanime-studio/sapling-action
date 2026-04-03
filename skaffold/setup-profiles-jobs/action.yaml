@@ -18,7 +18,7 @@ runs:
         REGISTRY: ${{ inputs.registry }}
       run: |
         FILE="$ROOT_PATH/skaffold.yaml"
-        MATRIX="$(nix run "$REGISTRY#yq-go" -- --output-format=json --indent=0 '.profiles // [] | map({"profiles": .name})' "$FILE")"
+        MATRIX="$(nix run "$REGISTRY#yq-go" -- --output-format=json --indent=0 '.profiles // [] | map({"name": .name})' "$FILE")"
         echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
         continue=$([ "$MATRIX" = "[]" ] && echo "false" || echo "true")
         echo "continue=$continue" >> "$GITHUB_OUTPUT"
