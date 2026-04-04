@@ -1,0 +1,36 @@
+name: Skaffold Integration
+description: Run Skaffold build and render, optionally with a profile
+inputs:
+  profile:
+    description: Optional Skaffold profile name
+    required: false
+  registry:
+    default: nixpkgs
+    description: Nix registry to use
+    required: false
+outputs:
+  manifest:
+    description: Rendered manifest YAML
+    value: ${{ steps.skaffold.outputs.manifest }}
+runs:
+  using: composite
+  steps:
+    - id: skaffold
+      env:
+        PROFILE: ${{ inputs.profile }}
+        REGISTRY: ${{ inputs.registry }}
+      run: |
+        args=()
+        if [ -n "$PROFILE" ]; then
+          args+=(--profile "$PROFILE")
+        fi
+
+        export SKAFFOLD_COLLECT_METRICS="false"
+
+        skaffold build "${args[@]}"
+        {
+          echo 'manifest<<EOF'
+          skaffold render "${args[@]}"
+          echo 'EOF'
+        } >> "$GITHUB_OUTPUT"
+      shell: bash
