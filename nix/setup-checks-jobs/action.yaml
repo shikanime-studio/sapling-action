@@ -1,10 +1,6 @@
 name: Setup Checks Jobs
 description: Generate matrix for Nix checks on Linux systems
 inputs:
-  registry:
-    default: nixpkgs
-    description: Nix registry to use
-    required: false
   systems:
     default: |
       {
@@ -18,12 +14,11 @@ runs:
   steps:
     - id: matrix
       env:
-        REGISTRY: ${{ inputs.registry }}
         SYSTEMS: ${{ inputs.systems }}
       run: |
         JSON="$(nix flake show --json --all-systems --accept-flake-config --no-pure-eval)"
         MATRIX="$(
-          nix run "$REGISTRY#jq" -- -c '
+          jq -c '
             .checks as $root
             | ($root | keys) as $available
             | (env.SYSTEMS | fromjson) as $systems

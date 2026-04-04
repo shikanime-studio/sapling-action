@@ -1,28 +1,10 @@
 name: Setup Skaffold Profiles Jobs
 description: Generate matrices for Skaffold profiles (render/build)
 inputs:
-  registry:
-    default: nixpkgs
-    description: Nix registry to use
-    required: false
   path:
     default: .
     description: Path to the directory containing skaffold.yaml
     required: false
-runs:
-  using: composite
-  steps:
-    - id: matrix
-      env:
-        ROOT_PATH: ${{ inputs.path }}
-        REGISTRY: ${{ inputs.registry }}
-      run: |
-        FILE="$ROOT_PATH/skaffold.yaml"
-        MATRIX="$(nix run "$REGISTRY#yq-go" -- --output-format=json --indent=0 '.profiles // [] | map({"name": .name})' "$FILE")"
-        echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
-        continue=$([ "$MATRIX" = "[]" ] && echo "false" || echo "true")
-        echo "continue=$continue" >> "$GITHUB_OUTPUT"
-      shell: bash
 outputs:
   continue:
     description: Whether any profiles were found
@@ -30,3 +12,16 @@ outputs:
   matrix:
     description: JSON array usable as a strategy matrix include list
     value: ${{ steps.matrix.outputs.matrix }}
+runs:
+  using: composite
+  steps:
+    - id: matrix
+      env:
+        ROOT_PATH: ${{ inputs.path }}
+      run: |
+        FILE="$ROOT_PATH/skaffold.yaml"
+        MATRIX="$(yq -o=json -I=0 '.profiles // [] | map({"name": .name})' "$FILE")"
+        echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+        continue=$([ "$MATRIX" = "[]" ] && echo "false" || echo "true")
+        echo "continue=$continue" >> "$GITHUB_OUTPUT"
+      shell: bash
