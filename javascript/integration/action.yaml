@@ -34,8 +34,6 @@ runs:
         fi
 
         while IFS= read -r stage; do
-          [ -z "$stage" ] && continue
-
           corepack "$PACKAGE_MANAGER" "${args[@]}" run "$stage"
         done <<< "$stages"
       shell: bash
