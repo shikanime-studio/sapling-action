@@ -10,7 +10,7 @@ inputs:
     required: false
 outputs:
   manifest:
-    description: Path to the rendered manifest file
+    description: Rendered manifest YAML
     value: ${{ steps.skaffold.outputs.manifest }}
 runs:
   using: composite
@@ -28,8 +28,9 @@ runs:
         export SKAFFOLD_COLLECT_METRICS="false"
 
         skaffold build "${args[@]}"
-        manifest="manifest.yaml"
-        skaffold render "${args[@]}" --output "$manifest"
-
-        echo "manifest=$manifest" >> "$GITHUB_OUTPUT"
+        {
+          echo 'manifest<<EOF'
+          skaffold render "${args[@]}"
+          echo 'EOF'
+        } >> "$GITHUB_OUTPUT"
       shell: bash
