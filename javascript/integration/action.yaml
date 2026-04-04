@@ -9,10 +9,6 @@ inputs:
     default: "false"
     description: If true, runs in workspace mode with --recursive
     required: false
-  registry:
-    default: nixpkgs
-    description: Nix registry to use
-    required: false
   stages:
     default: '["check","lint","build"]'
     description: JSON array of stages to run in order
@@ -21,7 +17,6 @@ runs:
   using: composite
   steps:
     - env:
-        REGISTRY: ${{ inputs.registry }}
         PACKAGE_MANAGER: ${{ inputs.package-manager }}
         RECURSIVE: ${{ inputs.recursive }}
         STAGES: ${{ inputs.stages }}
