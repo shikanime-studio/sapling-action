@@ -24,6 +24,6 @@ runs:
         fi
 
         while IFS= read -r stage; do
-          corepack pnpm "${args[@]}" run "$stage" --if-present
+          corepack pnpm "${args[@]}" run --if-present "$stage"
         done <<< "$stages"
       shell: bash
