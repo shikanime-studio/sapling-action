@@ -1,10 +1,6 @@
 name: JavaScript Integration
 description: Run a list of package manager stages via corepack
 inputs:
-  registry:
-    default: nixpkgs
-    description: Nix registry to use
-    required: false
   package-manager:
     default: pnpm
     description: Package manager to run via corepack (pnpm, yarn, npm)
@@ -12,6 +8,10 @@ inputs:
   recursive:
     default: "false"
     description: If true, runs in workspace mode with --recursive
+    required: false
+  registry:
+    default: nixpkgs
+    description: Nix registry to use
     required: false
   stages:
     default: '["check","lint","build"]'
