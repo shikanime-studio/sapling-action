@@ -9,12 +9,13 @@ inputs:
     default: pnpm
     description: Package manager to run via corepack (pnpm, yarn, npm)
     required: false
+  recursive:
+    default: "false"
+    description: If true, runs in workspace mode with --recursive
+    required: false
   stages:
     default: '["check","lint","build"]'
     description: JSON array of stages to run in order
-    required: false
-  workspace:
-    description: If non-empty, runs pnpm with --filter <workspace>
     required: false
 runs:
   using: composite
@@ -22,14 +23,14 @@ runs:
     - env:
         REGISTRY: ${{ inputs.registry }}
         PACKAGE_MANAGER: ${{ inputs.package-manager }}
+        RECURSIVE: ${{ inputs.recursive }}
         STAGES: ${{ inputs.stages }}
-        WORKSPACE: ${{ inputs.workspace }}
       run: |
         stages="$(echo "$STAGES" | nix run "$REGISTRY#jq" -- -r '.[]')"
 
         args=()
-        if [ -n "${WORKSPACE:-}" ]; then
-          args+=(--filter "$WORKSPACE")
+        if [ "$RECURSIVE" = "true" ]; then
+          args+=(--recursive)
         fi
 
         while IFS= read -r stage; do
