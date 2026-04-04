@@ -35,7 +35,7 @@ runs:
       run: |
         JSON="$(nix flake show --json --all-systems --accept-flake-config --no-pure-eval)"
         MATRIX="$(
-          nix run "$REGISTRY#jq" -- -c '
+          jq -c '
             .packages
             | to_entries
             | (env.SYSTEMS | fromjson) as $systems

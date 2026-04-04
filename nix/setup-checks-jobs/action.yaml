@@ -23,7 +23,7 @@ runs:
       run: |
         JSON="$(nix flake show --json --all-systems --accept-flake-config --no-pure-eval)"
         MATRIX="$(
-          nix run "$REGISTRY#jq" -- -c '
+          jq -c '
             .checks as $root
             | ($root | keys) as $available
             | (env.SYSTEMS | fromjson) as $systems

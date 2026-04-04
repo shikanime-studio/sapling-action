@@ -9,6 +9,13 @@ inputs:
     default: .
     description: Path to the directory containing skaffold.yaml
     required: false
+outputs:
+  continue:
+    description: Whether any profiles were found
+    value: ${{ steps.matrix.outputs.continue }}
+  matrix:
+    description: JSON array usable as a strategy matrix include list
+    value: ${{ steps.matrix.outputs.matrix }}
 runs:
   using: composite
   steps:
@@ -18,15 +25,8 @@ runs:
         REGISTRY: ${{ inputs.registry }}
       run: |
         FILE="$ROOT_PATH/skaffold.yaml"
-        MATRIX="$(nix run "$REGISTRY#yq-go" -- --output-format=json --indent=0 '.profiles // [] | map({"name": .name})' "$FILE")"
+        MATRIX="$(yq -o=json -I=0 '.profiles // [] | map({"name": .name})' "$FILE")"
         echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
         continue=$([ "$MATRIX" = "[]" ] && echo "false" || echo "true")
         echo "continue=$continue" >> "$GITHUB_OUTPUT"
       shell: bash
-outputs:
-  continue:
-    description: Whether any profiles were found
-    value: ${{ steps.matrix.outputs.continue }}
-  matrix:
-    description: JSON array usable as a strategy matrix include list
-    value: ${{ steps.matrix.outputs.matrix }}
