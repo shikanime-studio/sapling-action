@@ -1,0 +1,25 @@
+name: Skaffold Integration
+description: Run Skaffold build and render, optionally with a profile
+inputs:
+  registry:
+    default: nixpkgs
+    description: Nix registry to use
+    required: false
+  profile:
+    description: Optional Skaffold profile name
+    required: false
+runs:
+  using: composite
+  steps:
+    - env:
+        REGISTRY: ${{ inputs.registry }}
+        PROFILE: ${{ inputs.profile }}
+      run: |
+        args=()
+        if [ -n "$PROFILE" ]; then
+          args+=(--profile "$PROFILE")
+        fi
+
+        skaffold build "${args[@]}"
+        skaffold render "${args[@]}"
+      shell: bash
