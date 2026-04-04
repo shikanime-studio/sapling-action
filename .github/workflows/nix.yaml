@@ -18,11 +18,15 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
           token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
-      - uses: shikanime-studio/actions/nix/setup@v8
+      - uses: cachix/install-nix-action@v31
         with:
-          cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
-          cachix-name: ${{ inputs['cachix-name'] }}
-          github-token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          github_access_token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+      - continue-on-error: true
+        if: ${{ inputs['cachix-name'] != '' }}
+        uses: cachix/cachix-action@v17
+        with:
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          name: ${{ inputs['cachix-name'] }}
       - env:
           SYSTEM: ${{ matrix.system }}
         run: nix flake check --accept-flake-config --no-pure-eval --system "$SYSTEM"
@@ -50,11 +54,15 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
           token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
-      - uses: shikanime-studio/actions/nix/setup@v8
+      - uses: cachix/install-nix-action@v31
         with:
-          cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
-          cachix-name: ${{ inputs['cachix-name'] }}
-          github-token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          github_access_token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+      - continue-on-error: true
+        if: ${{ inputs['cachix-name'] != '' }}
+        uses: cachix/cachix-action@v17
+        with:
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          name: ${{ inputs['cachix-name'] }}
       - env:
           NAME: ${{ matrix.name }}
           SYSTEM: ${{ matrix.system }}
@@ -83,9 +91,9 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
           token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
-      - uses: shikanime-studio/actions/nix/setup@v8
+      - uses: cachix/install-nix-action@v31
         with:
-          github-token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          github_access_token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
       - id: setup-checks-jobs
         uses: shikanime-studio/actions/nix/setup-checks-jobs@v8
   setup-packages-jobs:
@@ -107,9 +115,9 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
           token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
-      - uses: shikanime-studio/actions/nix/setup@v8
+      - uses: cachix/install-nix-action@v31
         with:
-          github-token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
+          github_access_token: ${{ steps.createGithubAppToken.outputs.token || secrets.GITHUB_TOKEN }}
       - id: setup-packages-jobs
         uses: shikanime-studio/actions/nix/setup-packages-jobs@v8
 name: Nix
