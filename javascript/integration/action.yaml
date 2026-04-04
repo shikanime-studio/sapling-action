@@ -1,10 +1,6 @@
 name: JavaScript Integration
 description: Run a list of package manager stages via corepack
 inputs:
-  package-manager:
-    default: pnpm
-    description: Package manager to run via corepack (pnpm, yarn, npm)
-    required: false
   recursive:
     default: "false"
     description: If true, runs in workspace mode with --recursive
@@ -17,7 +13,6 @@ runs:
   using: composite
   steps:
     - env:
-        PACKAGE_MANAGER: ${{ inputs.package-manager }}
         RECURSIVE: ${{ inputs.recursive }}
         STAGES: ${{ inputs.stages }}
       run: |
@@ -29,6 +24,6 @@ runs:
         fi
 
         while IFS= read -r stage; do
-          corepack "$PACKAGE_MANAGER" "${args[@]}" run "$stage"
+          corepack pnpm "${args[@]}" run "$stage" --if-present
         done <<< "$stages"
       shell: bash
